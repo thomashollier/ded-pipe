@@ -12,12 +12,12 @@ import logging
 # Add the parent directory to the path so we can import the pipeline
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ingest_pipeline.footage_ingest import (
+from ded_io.footage_ingest import (
     FootageIngestPipeline,
     ingest_shot,
     quick_ingest
 )
-from ingest_pipeline.config import PipelineConfig
+from ded_io.config import PipelineConfig
 
 
 def setup_logging():
@@ -181,14 +181,14 @@ def example_custom_pipeline():
     print("Example 4: Custom Pipeline")
     print("="*80 + "\n")
     
-    from ingest_pipeline.pipeline import PipelineBuilder
-    from ingest_pipeline.stages import (
+    from ded_io.pipeline import PipelineBuilder
+    from ded_io.stages import (
         SonyRawConversionStage,
         OIIOColorTransformStage,
         BurnInProxyStage,  # Using burn-in version instead of regular proxy
         ShotTreeOrganizationStage
     )
-    from ingest_pipeline.models import ShotInfo, EditorialCutInfo
+    from ded_io.models import ShotInfo, EditorialCutInfo
     
     # Build custom pipeline (without Kitsu, with burn-in proxy)
     builder = PipelineBuilder("CustomIngest")
@@ -230,8 +230,8 @@ def example_stage_usage():
     print("Example 5: Using Individual Stages")
     print("="*80 + "\n")
     
-    from ingest_pipeline.stages import OIIOColorTransformStage
-    from ingest_pipeline.models import ShotInfo, EditorialCutInfo, ImageSequence
+    from ded_io.stages import OIIOColorTransformStage
+    from ded_io.models import ShotInfo, EditorialCutInfo, ImageSequence
     
     # Create a stage
     color_stage = OIIOColorTransformStage()

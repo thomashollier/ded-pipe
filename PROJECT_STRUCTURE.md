@@ -43,7 +43,7 @@ footage-ingest-pipeline/
 │   │   └── feature_request.md        # Feature template
 │   └── pull_request_template.md      # PR template
 │
-└── ingest_pipeline/                  # Main package (12 files)
+└── ded_io/                  # Main package (12 files)
     ├── __init__.py                   # Package exports
     ├── config.py                     # Configuration classes
     ├── models.py                     # Data models
@@ -163,48 +163,48 @@ Quick start test shot script with helpful output formatting.
 
 ### Python Package (12 files)
 
-#### ingest_pipeline/__init__.py
+#### ded_io/__init__.py
 Package exports and version info.
 
-#### ingest_pipeline/config.py
+#### ded_io/config.py
 - `PipelineConfig`: Frame numbering, color spaces, formats, paths
 - `KitsuConfig`: Kitsu API settings
 
-#### ingest_pipeline/models.py
+#### ded_io/models.py
 - `EditorialCutInfo`: Editorial cut data
 - `ShotInfo`: Complete shot information
 - `ProcessingResult`: Stage results
 - `ImageSequence`: Image sequence representation
 
-#### ingest_pipeline/pipeline.py
+#### ded_io/pipeline.py
 - `Pipeline`: Main orchestrator
 - `PipelineBuilder`: Fluent interface
 - `ConditionalPipeline`: Conditional execution
 
-#### ingest_pipeline/footage_ingest.py
+#### ded_io/footage_ingest.py
 - `FootageIngestPipeline`: OOP interface
 - `ingest_shot()`: Simple function
-- `create_ingest_pipeline()`: Factory
+- `create_ded_io()`: Factory
 
-#### ingest_pipeline/stages/base.py
+#### ded_io/stages/base.py
 - `PipelineStage`: Abstract base class
 - `ValidationStage`: Validation base
 
-#### ingest_pipeline/stages/sony_conversion.py
+#### ded_io/stages/sony_conversion.py
 - `SonyRawConversionStage`: MXF → DPX
 
-#### ingest_pipeline/stages/oiio_transform.py
+#### ded_io/stages/oiio_transform.py
 - `OIIOColorTransformStage`: Color + geometric transforms
 
-#### ingest_pipeline/stages/proxy_generation.py
+#### ded_io/stages/proxy_generation.py
 - `ProxyGenerationStage`: MP4 proxy
 - `BurnInProxyStage`: Proxy with burn-ins
 
-#### ingest_pipeline/stages/kitsu_integration.py
+#### ded_io/stages/kitsu_integration.py
 - `KitsuIntegrationStage`: Asset registration
 - `KitsuQueryStage`: Data queries
 
-#### ingest_pipeline/stages/file_operations.py
+#### ded_io/stages/file_operations.py
 - `FileCopyStage`: File copying
 - `ShotTreeOrganizationStage`: Directory organization
 - `CleanupStage`: Temp file cleanup
@@ -333,7 +333,7 @@ Later overrides earlier.
 
 ```python
 # Full pipeline
-create_ingest_pipeline()
+create_ded_io()
 
 # QC only (no Kitsu)
 Pipeline([OIIOColorTransformStage(), ProxyGenerationStage()])

@@ -1,4 +1,4 @@
-# Footage Ingest Pipeline
+# DED-IO: Digital Editorial Data - Input/Output
 
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,7 +24,7 @@ A flexible, modular Python pipeline for ingesting camera footage into a VFX prod
 ### Directory Structure
 
 ```
-ingest_pipeline/
+ded_io/
 ├── __init__.py              # Package initialization
 ├── config.py                # Configuration and constants
 ├── models.py                # Data models (ShotInfo, EditorialCutInfo, etc.)
@@ -88,8 +88,8 @@ High-level interface for common ingest operations:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/footage-ingest-pipeline.git
-cd footage-ingest-pipeline
+git clone https://github.com/yourusername/ded-io.git
+cd ded-io
 
 # Create virtual environment
 python -m venv venv
@@ -152,7 +152,7 @@ python ingest-cli.py --config config.json --batch shots.json
 ### Example 1: Simple Single Shot Ingest
 
 ```python
-from ingest_pipeline import ingest_shot
+from ded_io import ingest_shot
 from pathlib import Path
 
 # Ingest a single shot
@@ -173,7 +173,7 @@ print(f"Duration: {summary['duration_seconds']:.2f}s")
 ### Example 2: Using the Pipeline Object
 
 ```python
-from ingest_pipeline import FootageIngestPipeline
+from ded_io import FootageIngestPipeline
 from pathlib import Path
 
 # Create pipeline instance
@@ -208,7 +208,7 @@ print(f"Success rate: {summary['successful_shots']}/{summary['total_shots_proces
 ### Example 3: Batch Processing
 
 ```python
-from ingest_pipeline import FootageIngestPipeline
+from ded_io import FootageIngestPipeline
 
 pipeline = FootageIngestPipeline(project="my_project")
 
@@ -235,8 +235,8 @@ results = pipeline.ingest_batch(shots)
 ### Example 4: Custom Pipeline
 
 ```python
-from ingest_pipeline.pipeline import PipelineBuilder
-from ingest_pipeline.stages import (
+from ded_io.pipeline import PipelineBuilder
+from ded_io.stages import (
     SonyRawConversionStage,
     OIIOColorTransformStage,
     BurnInProxyStage,
@@ -259,8 +259,8 @@ summary = custom_pipeline.execute(shot_info)
 ### Example 5: Using Individual Stages
 
 ```python
-from ingest_pipeline.stages import OIIOColorTransformStage
-from ingest_pipeline.models import ShotInfo, EditorialCutInfo, ImageSequence
+from ded_io.stages import OIIOColorTransformStage
+from ded_io.models import ShotInfo, EditorialCutInfo, ImageSequence
 from pathlib import Path
 
 # Create a single stage
@@ -306,7 +306,7 @@ print(f"Stage completed: {result.success}")
 ### Frame Numbering
 
 ```python
-from ingest_pipeline.config import PipelineConfig
+from ded_io.config import PipelineConfig
 
 # Default configuration
 PipelineConfig.DIGITAL_START_FRAME = 1001  # Shot starts at frame 1001
@@ -389,8 +389,8 @@ For the test shot `tst100`:
 ### Creating a New Stage
 
 ```python
-from ingest_pipeline.stages.base import PipelineStage
-from ingest_pipeline.models import ProcessingResult, ShotInfo
+from ded_io.stages.base import PipelineStage
+from ded_io.models import ProcessingResult, ShotInfo
 
 class MyCustomStage(PipelineStage):
     """Custom processing stage."""

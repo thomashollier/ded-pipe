@@ -9,14 +9,14 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(
-    name="footage-ingest-pipeline",
+    name="ded-io",
     version="0.1.0",
     author="Your Name",
     author_email="your.email@example.com",
-    description="Flexible, modular pipeline for ingesting camera footage into VFX production",
+    description="DED-IO: Digital Editorial Data - Input/Output pipeline for VFX production",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/footage-ingest-pipeline",
+    url="https://github.com/yourusername/ded-io",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

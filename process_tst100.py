@@ -8,7 +8,7 @@ This demonstrates how to process the specific shot mentioned in the requirements
 - Digital shot name: tst100
 """
 from pathlib import Path
-from ingest_pipeline import ingest_shot
+from ded_io import ingest_shot
 
 def process_tst100(source_file: str, in_point: int, out_point: int):
     """

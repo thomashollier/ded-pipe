@@ -25,7 +25,7 @@ A complete, production-ready pipeline system with:
 ├── examples.py           # Comprehensive usage examples
 ├── process_tst100.py     # Quick start for test shot
 │
-└── ingest_pipeline/      # Main package
+└── ded_io/      # Main package
     ├── config.py         # Configuration
     ├── models.py         # Data models
     ├── pipeline.py       # Pipeline orchestration
@@ -76,7 +76,7 @@ Create `config.json`:
 
 **Option B: Edit the package config**
 
-Edit `ingest_pipeline/config.py`:
+Edit `ded_io/config.py`:
 
 ```python
 # Set tool paths
@@ -164,7 +164,7 @@ python ingest-cli.py \
 ### Simple Single Shot
 
 ```python
-from ingest_pipeline import ingest_shot
+from ded_io import ingest_shot
 from pathlib import Path
 
 summary = ingest_shot(
@@ -180,7 +180,7 @@ summary = ingest_shot(
 ### Multiple Shots
 
 ```python
-from ingest_pipeline import FootageIngestPipeline
+from ded_io import FootageIngestPipeline
 
 pipeline = FootageIngestPipeline(project="my_project")
 
@@ -208,8 +208,8 @@ results = pipeline.ingest_batch(shots)
 ### Custom Pipeline
 
 ```python
-from ingest_pipeline.pipeline import PipelineBuilder
-from ingest_pipeline.stages import *
+from ded_io.pipeline import PipelineBuilder
+from ded_io.stages import *
 
 # Build custom pipeline
 builder = PipelineBuilder("CustomIngest")
@@ -294,8 +294,8 @@ PROXY_CRF = 18                  # Quality setting
 ### Create a New Stage
 
 ```python
-from ingest_pipeline.stages.base import PipelineStage
-from ingest_pipeline.models import ProcessingResult, ShotInfo
+from ded_io.stages.base import PipelineStage
+from ded_io.models import ProcessingResult, ShotInfo
 
 class MyCustomStage(PipelineStage):
     def process(self, shot_info: ShotInfo, result: ProcessingResult, **kwargs):
@@ -307,7 +307,7 @@ class MyCustomStage(PipelineStage):
 ### Add to Pipeline
 
 ```python
-from ingest_pipeline.pipeline import PipelineBuilder
+from ded_io.pipeline import PipelineBuilder
 
 builder = PipelineBuilder("MyPipeline")
 builder.add_stage(MyCustomStage())
@@ -359,7 +359,7 @@ pipeline = builder.build()
 
 ### Standard Ingest
 ```python
-from ingest_pipeline import quick_ingest
+from ded_io import quick_ingest
 
 quick_ingest(
     source_file="/path/to/clip.mxf",
@@ -372,8 +372,8 @@ quick_ingest(
 
 ### Reprocess Colors Only
 ```python
-from ingest_pipeline.pipeline import Pipeline
-from ingest_pipeline.stages import OIIOColorTransformStage
+from ded_io.pipeline import Pipeline
+from ded_io.stages import OIIOColorTransformStage
 
 # Reprocess existing DPX to EXR with new color settings
 pipeline = Pipeline("Recolor")
@@ -383,7 +383,7 @@ pipeline.execute(shot_info, input_sequence=existing_dpx)
 
 ### Generate New Proxy
 ```python
-from ingest_pipeline.stages import BurnInProxyStage
+from ded_io.stages import BurnInProxyStage
 
 # Create proxy from existing EXR with burn-ins
 proxy_stage = BurnInProxyStage()
