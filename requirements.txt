@@ -1,0 +1,13 @@
+# Python dependencies for the footage ingest pipeline
+
+# Core dependencies
+requests>=2.28.0  # For Kitsu API integration
+
+# Optional but recommended
+# OpenImageIO Python bindings (if available via pip in your environment)
+# OpenImageIO>=2.4.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0  # For testing
+# black>=22.0.0  # For code formatting
+# mypy>=0.990   # For type checking
