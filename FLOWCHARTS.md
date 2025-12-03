@@ -9,6 +9,9 @@ This document contains flowcharts showing the pipeline workflow and codebase str
 4. [CLI Execution Flow](#cli-execution-flow)
 5. [Stage Execution Flow](#stage-execution-flow)
 6. [Data Model Relationships](#data-model-relationships)
+7. [Frame Number Mapping](#frame-number-mapping)
+8. [Configuration Loading](#configuration-loading)
+9. [Error Handling Flow](#error-handling-flow)
 
 ---
 
@@ -18,29 +21,29 @@ This document contains flowcharts showing the pipeline workflow and codebase str
 graph TB
     Start([User Input]) --> Input{Input Method}
     
-    Input -->|CLI| CLI[Command Line Interface<br/>ingest-cli.py]
-    Input -->|Python API| API[Python Function<br/>ingest_shot()]
-    Input -->|OOP| OOP[FootageIngestPipeline<br/>Object]
+    Input -->|CLI| CLI["Command Line Interface<br/>ingest-cli.py"]
+    Input -->|Python API| API["Python Function<br/>ingest_shot function"]
+    Input -->|OOP| OOP["FootageIngestPipeline<br/>Object"]
     
-    CLI --> Config[Load Configuration<br/>config.json]
-    API --> Build[Build ShotInfo]
+    CLI --> Config["Load Configuration<br/>config.json"]
+    API --> Build["Build ShotInfo"]
     OOP --> Build
     
     Config --> Build
-    Build --> Pipeline[Create Pipeline<br/>6 Stages]
+    Build --> Pipeline["Create Pipeline<br/>6 Stages"]
     
-    Pipeline --> Stage1[Stage 1:<br/>Sony Raw Conversion<br/>MXF → DPX]
-    Stage1 --> Stage2[Stage 2:<br/>OIIO Color Transform<br/>DPX → EXR + ACES]
-    Stage2 --> Stage3[Stage 3:<br/>Proxy Generation<br/>EXR → MP4]
-    Stage3 --> Stage4[Stage 4:<br/>Shot Tree Organization<br/>Copy to Structure]
-    Stage4 --> Stage5[Stage 5:<br/>Kitsu Integration<br/>Register in DB]
-    Stage5 --> Stage6[Stage 6:<br/>Cleanup<br/>Remove Temp Files]
+    Pipeline --> Stage1["Stage 1:<br/>Sony Raw Conversion<br/>MXF to DPX"]
+    Stage1 --> Stage2["Stage 2:<br/>OIIO Color Transform<br/>DPX to EXR with ACES"]
+    Stage2 --> Stage3["Stage 3:<br/>Proxy Generation<br/>EXR to MP4"]
+    Stage3 --> Stage4["Stage 4:<br/>Shot Tree Organization<br/>Copy to Structure"]
+    Stage4 --> Stage5["Stage 5:<br/>Kitsu Integration<br/>Register in DB"]
+    Stage5 --> Stage6["Stage 6:<br/>Cleanup<br/>Remove Temp Files"]
     
     Stage6 --> Success{Success?}
-    Success -->|Yes| Report[Generate Report<br/>Summary]
-    Success -->|No| Error[Error Handling<br/>Log & Report]
+    Success -->|Yes| Report["Generate Report<br/>Summary"]
+    Success -->|No| Error["Error Handling<br/>Log and Report"]
     
-    Report --> Output([Output:<br/>EXR Plates<br/>MP4 Proxy<br/>Metadata])
+    Report --> Output(["Output:<br/>EXR Plates<br/>MP4 Proxy<br/>Metadata"])
     Error --> Output
     
     style Start fill:#e1f5ff
@@ -61,54 +64,54 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph Input ["🎬 Input Data"]
-        Raw[Raw MXF File<br/>Sony Venice 2]
-        Editorial[Editorial Info<br/>In: 100, Out: 150]
-        Project[Project Info<br/>Name, Sequence, Shot]
+    subgraph Input ["Input Data"]
+        Raw["Raw MXF File<br/>Sony Venice 2"]
+        Editorial["Editorial Info<br/>In: 100, Out: 150"]
+        Project["Project Info<br/>Name, Sequence, Shot"]
     end
     
-    subgraph Processing ["⚙️ Processing Pipeline"]
+    subgraph Processing ["Processing Pipeline"]
         direction TB
         
         subgraph Stage1 ["Stage 1: Sony Conversion"]
-            S1A[Extract Frames<br/>with Handles]
-            S1B[Convert to DPX<br/>Temp Directory]
+            S1A["Extract Frames<br/>with Handles"]
+            S1B["Convert to DPX<br/>Temp Directory"]
             S1A --> S1B
         end
         
         subgraph Stage2 ["Stage 2: Color Transform"]
-            S2A[Load DPX Frames]
-            S2B[Apply ACES Color<br/>SLog3 → ACEScg]
-            S2C[Desqueeze 2.0x<br/>Anamorphic]
-            S2D[Letterbox to UHD<br/>3840x2160]
-            S2E[Save as EXR<br/>DWAA Compression]
+            S2A["Load DPX Frames"]
+            S2B["Apply ACES Color<br/>SLog3 to ACEScg"]
+            S2C["Desqueeze 2.0x<br/>Anamorphic"]
+            S2D["Letterbox to UHD<br/>3840x2160"]
+            S2E["Save as EXR<br/>DWAA Compression"]
             S2A --> S2B --> S2C --> S2D --> S2E
         end
         
         subgraph Stage3 ["Stage 3: Proxy Generation"]
-            S3A[Load EXR Sequence]
-            S3B[Convert to sRGB]
-            S3C[Encode H.264<br/>MP4 Proxy]
+            S3A["Load EXR Sequence"]
+            S3B["Convert to sRGB"]
+            S3C["Encode H.264<br/>MP4 Proxy"]
             S3A --> S3B --> S3C
         end
         
         subgraph Stage4 ["Stage 4: Organization"]
-            S4A[Create Shot Tree<br/>Directory Structure]
-            S4B[Copy EXR to<br/>plates/]
-            S4C[Copy MP4 to<br/>proxy/]
+            S4A["Create Shot Tree<br/>Directory Structure"]
+            S4B["Copy EXR to<br/>plates directory"]
+            S4C["Copy MP4 to<br/>proxy directory"]
             S4A --> S4B --> S4C
         end
         
         subgraph Stage5 ["Stage 5: Kitsu"]
-            S5A[Authenticate API]
-            S5B[Create/Update Shot]
-            S5C[Register Plate<br/>Metadata]
+            S5A["Authenticate API"]
+            S5B["Create or Update Shot"]
+            S5C["Register Plate<br/>Metadata"]
             S5A --> S5B --> S5C
         end
         
         subgraph Stage6 ["Stage 6: Cleanup"]
-            S6A[Remove Temp DPX]
-            S6B[Remove Temp Dirs]
+            S6A["Remove Temp DPX"]
+            S6B["Remove Temp Dirs"]
             S6A --> S6B
         end
         
@@ -119,11 +122,11 @@ graph TB
         Stage5 --> Stage6
     end
     
-    subgraph Output ["📁 Output Structure"]
-        Tree[Shot Tree:<br/>/project/sequences/seq/shot/]
-        Plates[plates/<br/>shot.0993.exr<br/>shot.0994.exr<br/>...]
-        Proxy[proxy/<br/>shot.mp4]
-        Kitsu[Kitsu Database<br/>Metadata Entry]
+    subgraph Output ["Output Structure"]
+        Tree["Shot Tree:<br/>/project/sequences/seq/shot/"]
+        Plates["plates/<br/>shot.0993.exr<br/>shot.0994.exr<br/>etc"]
+        Proxy["proxy/<br/>shot.mp4"]
+        Kitsu["Kitsu Database<br/>Metadata Entry"]
     end
     
     Raw --> Stage1
@@ -152,36 +155,36 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph User ["👤 User Interface Layer"]
-        CLI[ingest-cli.py<br/>Command Line Interface]
-        Example[examples.py<br/>Python API Examples]
-        Test[process_tst100.py<br/>Test Script]
+    subgraph User ["User Interface Layer"]
+        CLI["ingest-cli.py<br/>Command Line Interface"]
+        Example["examples.py<br/>Python API Examples"]
+        Test["process_tst100.py<br/>Test Script"]
     end
     
-    subgraph API ["📚 High-Level API Layer"]
-        Ingest[footage_ingest.py<br/>FootageIngestPipeline<br/>ingest_shot()]
+    subgraph API ["High-Level API Layer"]
+        Ingest["footage_ingest.py<br/>FootageIngestPipeline<br/>ingest_shot function"]
     end
     
-    subgraph Core ["⚙️ Core Pipeline Layer"]
-        Pipeline[pipeline.py<br/>Pipeline Orchestrator<br/>PipelineBuilder]
-        Config[config.py<br/>PipelineConfig<br/>KitsuConfig]
-        Models[models.py<br/>ShotInfo<br/>EditorialCutInfo<br/>ProcessingResult]
+    subgraph Core ["Core Pipeline Layer"]
+        Pipeline["pipeline.py<br/>Pipeline Orchestrator<br/>PipelineBuilder"]
+        Config["config.py<br/>PipelineConfig<br/>KitsuConfig"]
+        Models["models.py<br/>ShotInfo<br/>EditorialCutInfo<br/>ProcessingResult"]
     end
     
-    subgraph Stages ["🔧 Processing Stages Layer"]
-        Base[stages/base.py<br/>PipelineStage<br/>Abstract Base]
-        Sony[stages/sony_conversion.py<br/>SonyRawConversionStage]
-        OIIO[stages/oiio_transform.py<br/>OIIOColorTransformStage]
-        Proxy[stages/proxy_generation.py<br/>ProxyGenerationStage]
-        Kitsu[stages/kitsu_integration.py<br/>KitsuIntegrationStage]
-        Files[stages/file_operations.py<br/>ShotTreeOrganizationStage]
+    subgraph Stages ["Processing Stages Layer"]
+        Base["stages/base.py<br/>PipelineStage<br/>Abstract Base"]
+        Sony["stages/sony_conversion.py<br/>SonyRawConversionStage"]
+        OIIO["stages/oiio_transform.py<br/>OIIOColorTransformStage"]
+        Proxy["stages/proxy_generation.py<br/>ProxyGenerationStage"]
+        Kitsu["stages/kitsu_integration.py<br/>KitsuIntegrationStage"]
+        Files["stages/file_operations.py<br/>ShotTreeOrganizationStage"]
     end
     
-    subgraph External ["🌐 External Tools"]
-        SonyTool[Sony Converter<br/>Command Line]
-        OIIOTool[OpenImageIO<br/>oiiotool]
-        FFmpeg[FFmpeg<br/>Video Encoder]
-        KitsuAPI[Kitsu API<br/>REST]
+    subgraph External ["External Tools"]
+        SonyTool["Sony Converter<br/>Command Line"]
+        OIIOTool["OpenImageIO<br/>oiiotool"]
+        FFmpeg["FFmpeg<br/>Video Encoder"]
+        KitsuAPI["Kitsu API<br/>REST"]
     end
     
     CLI --> Ingest
@@ -230,38 +233,38 @@ graph TB
 
 ```mermaid
 graph TB
-    Start([CLI Command]) --> Parse[Parse Arguments<br/>--source, --sequence, etc.]
+    Start([CLI Command]) --> Parse["Parse Arguments<br/>source, sequence, etc."]
     
     Parse --> ConfigLoad{Config File?}
-    ConfigLoad -->|Yes| LoadConfig[Load config.json<br/>Project Settings]
-    ConfigLoad -->|No| Defaults[Use Defaults]
+    ConfigLoad -->|Yes| LoadConfig["Load config.json<br/>Project Settings"]
+    ConfigLoad -->|No| Defaults["Use Defaults"]
     
     LoadConfig --> Validate
     Defaults --> Validate
     
-    Validate[Validate Arguments<br/>Check File Exists<br/>Check Frame Range]
+    Validate["Validate Arguments<br/>Check File Exists<br/>Check Frame Range"]
     
     Validate --> Mode{Mode?}
     
-    Mode -->|Single Shot| BuildShot[Build ShotInfo<br/>from Arguments]
-    Mode -->|Batch| LoadBatch[Load batch.json<br/>Shot List]
+    Mode -->|Single Shot| BuildShot["Build ShotInfo<br/>from Arguments"]
+    Mode -->|Batch| LoadBatch["Load batch.json<br/>Shot List"]
     
     BuildShot --> DryRun{Dry Run?}
     LoadBatch --> DryRun
     
-    DryRun -->|Yes| Preview[Print Preview<br/>No Processing]
-    DryRun -->|No| Execute[Execute Pipeline]
+    DryRun -->|Yes| Preview["Print Preview<br/>No Processing"]
+    DryRun -->|No| Execute["Execute Pipeline"]
     
-    Execute --> Process[Process Stages<br/>1-6]
+    Execute --> Process["Process Stages<br/>1 through 6"]
     
-    Process --> Collect[Collect Results<br/>Success/Errors]
+    Process --> Collect["Collect Results<br/>Success and Errors"]
     
     Collect --> Report{Generate Report?}
     
-    Report -->|Yes| SaveReport[Save JSON Report]
+    Report -->|Yes| SaveReport["Save JSON Report"]
     Report -->|No| Display
     
-    SaveReport --> Display[Display Summary<br/>Console Output]
+    SaveReport --> Display["Display Summary<br/>Console Output"]
     Preview --> Display
     
     Display --> End([Exit])
@@ -278,28 +281,28 @@ graph TB
 
 ```mermaid
 graph TB
-    Start([Stage Start]) --> Init[Initialize Stage<br/>Load Config]
+    Start([Stage Start]) --> Init["Initialize Stage<br/>Load Config"]
     
-    Init --> PreCheck[Pre-Execution Checks<br/>Validate Inputs<br/>Check Tools Available]
+    Init --> PreCheck["Pre-Execution Checks<br/>Validate Inputs<br/>Check Tools Available"]
     
     PreCheck --> Valid{Valid?}
     
-    Valid -->|No| Error[Add Error to Result<br/>Mark as Failed]
-    Valid -->|Yes| Setup[Setup Stage<br/>Create Directories<br/>Prepare Paths]
+    Valid -->|No| Error["Add Error to Result<br/>Mark as Failed"]
+    Valid -->|Yes| Setup["Setup Stage<br/>Create Directories<br/>Prepare Paths"]
     
-    Setup --> Process[Execute Stage Logic<br/>Process Files]
+    Setup --> Process["Execute Stage Logic<br/>Process Files"]
     
-    Process --> Monitor[Monitor Progress<br/>Log Messages<br/>Track Timing]
+    Process --> Monitor["Monitor Progress<br/>Log Messages<br/>Track Timing"]
     
-    Monitor --> PostCheck[Post-Execution Checks<br/>Verify Output<br/>Validate Results]
+    Monitor --> PostCheck["Post-Execution Checks<br/>Verify Output<br/>Validate Results"]
     
     PostCheck --> Success{Success?}
     
     Success -->|No| Error
-    Success -->|Yes| Result[Create ProcessingResult<br/>Success = True<br/>Output Paths]
+    Success -->|Yes| Result["Create ProcessingResult<br/>Success equals True<br/>Output Paths"]
     
     Error --> Return
-    Result --> Return[Return to Pipeline]
+    Result --> Return["Return to Pipeline"]
     
     Return --> Next{More Stages?}
     
@@ -371,7 +374,6 @@ classDiagram
     }
     
     class PipelineConfig {
-        <<static>>
         +int DIGITAL_START_FRAME
         +int HEAD_HANDLE_FRAMES
         +int TAIL_HANDLE_FRAMES
@@ -391,7 +393,6 @@ classDiagram
     }
     
     class PipelineStage {
-        <<abstract>>
         +String name
         +Logger logger
         +execute()
@@ -410,29 +411,29 @@ classDiagram
 
 ---
 
-## Frame Number Mapping Flow
+## Frame Number Mapping
 
 ```mermaid
 graph LR
-    subgraph Editorial ["📽️ Editorial"]
-        E1[Editorial Frame 100<br/>Cut In Point]
-        E2[Editorial Frame 150<br/>Cut Out Point]
-        E3[Duration: 51 frames]
+    subgraph Editorial ["Editorial"]
+        E1["Editorial Frame 100<br/>Cut In Point"]
+        E2["Editorial Frame 150<br/>Cut Out Point"]
+        E3["Duration: 51 frames"]
     end
     
-    subgraph Digital ["🎬 Digital (with Handles)"]
-        D1[Digital Frame 993<br/>Start with Handle]
-        D2[Digital Frame 1001<br/>Shot Start]
-        D3[Digital Frame 1051<br/>Shot End]
-        D4[Digital Frame 1059<br/>End with Handle]
-        D5[Total: 67 frames<br/>51 + 8 + 8]
+    subgraph Digital ["Digital with Handles"]
+        D1["Digital Frame 993<br/>Start with Handle"]
+        D2["Digital Frame 1001<br/>Shot Start"]
+        D3["Digital Frame 1051<br/>Shot End"]
+        D4["Digital Frame 1059<br/>End with Handle"]
+        D5["Total: 67 frames<br/>51 plus 8 plus 8"]
     end
     
-    subgraph Output ["💾 Output Files"]
-        O1[shot.0993.exr]
-        O2[shot.1001.exr]
-        O3[shot.1051.exr]
-        O4[shot.1059.exr]
+    subgraph Output ["Output Files"]
+        O1["shot.0993.exr"]
+        O2["shot.1001.exr"]
+        O3["shot.1051.exr"]
+        O4["shot.1059.exr"]
     end
     
     E1 -.->|Maps to| D2
@@ -450,24 +451,24 @@ graph LR
 
 ---
 
-## Configuration Loading Flow
+## Configuration Loading
 
 ```mermaid
 graph TB
     Start([Application Start]) --> CheckCLI{CLI Config<br/>Provided?}
     
-    CheckCLI -->|Yes| LoadJSON[Load JSON Config<br/>config.json]
-    CheckCLI -->|No| LoadDefault[Load Default Config<br/>PipelineConfig]
+    CheckCLI -->|Yes| LoadJSON["Load JSON Config<br/>config.json"]
+    CheckCLI -->|No| LoadDefault["Load Default Config<br/>PipelineConfig"]
     
-    LoadJSON --> Merge[Merge with Defaults<br/>CLI overrides JSON<br/>JSON overrides Defaults]
+    LoadJSON --> Merge["Merge with Defaults<br/>CLI overrides JSON<br/>JSON overrides Defaults"]
     LoadDefault --> Merge
     
-    Merge --> Validate[Validate Config<br/>Check Paths<br/>Check Tools]
+    Merge --> Validate["Validate Config<br/>Check Paths<br/>Check Tools"]
     
     Validate --> Valid{Valid?}
     
-    Valid -->|No| Error[Show Errors<br/>Exit]
-    Valid -->|Yes| Store[Store Config<br/>Make Available to Stages]
+    Valid -->|No| Error["Show Errors<br/>Exit"]
+    Valid -->|Yes| Store["Store Config<br/>Make Available to Stages"]
     
     Store --> Ready([Ready to Execute])
     
@@ -485,13 +486,13 @@ graph TB
 graph TB
     Stage([Stage Executing]) --> Try{Try<br/>Execute}
     
-    Try -->|Success| Result[Create Success Result<br/>success=True]
-    Try -->|Exception| Catch[Catch Exception<br/>Log Error]
+    Try -->|Success| Result["Create Success Result<br/>success equals true"]
+    Try -->|Exception| Catch["Catch Exception<br/>Log Error"]
     
     Catch --> StopError{Stop on<br/>Error?}
     
-    StopError -->|Yes| Abort[Abort Pipeline<br/>Return Error]
-    StopError -->|No| Continue[Continue to<br/>Next Stage]
+    StopError -->|Yes| Abort["Abort Pipeline<br/>Return Error"]
+    StopError -->|No| Continue["Continue to<br/>Next Stage"]
     
     Result --> Next
     Continue --> Next
@@ -499,17 +500,17 @@ graph TB
     Next{More<br/>Stages?}
     
     Next -->|Yes| NextStage([Next Stage])
-    Next -->|No| Summary[Generate Summary<br/>All Results]
+    Next -->|No| Summary["Generate Summary<br/>All Results"]
     
     Abort --> Summary
     
-    Summary --> Report[Create Report<br/>JSON Format]
+    Summary --> Report["Create Report<br/>JSON Format"]
     
     Report --> Output{Output<br/>Method?}
     
-    Output -->|Console| Console[Print Summary<br/>Colored Output]
-    Output -->|File| File[Save Report<br/>JSON File]
-    Output -->|Both| Both[Console + File]
+    Output -->|Console| Console["Print Summary<br/>Colored Output"]
+    Output -->|File| File["Save Report<br/>JSON File"]
+    Output -->|Both| Both["Console and File"]
     
     Console --> End([Complete])
     File --> End
@@ -550,17 +551,21 @@ Just push this file to your repository and view it on GitHub - the charts will r
 
 ## Legend
 
-🎬 **Input/Output** - Start and end points  
-⚙️ **Processing** - Active processing stages  
-📚 **Data** - Data models and structures  
-🔧 **Tools** - External tools and utilities  
-📁 **Files** - File system operations  
-🌐 **Network** - API calls and external services  
+**Symbols:**
+- Circle with text `([Text])` - Start/End points
+- Rectangle `["Text"]` - Process steps
+- Diamond `{Text}` - Decision points
+- Subgraph - Grouped related items
 
 **Colors:**
-- 🔵 Blue - Input/Start
-- 🟢 Green - Output/Success
-- 🟡 Yellow - Processing
-- 🔴 Red - Error/Failure
-- 🟣 Purple - API Layer
-- 🟠 Orange - External Tools
+- Blue `#e1f5ff` - Input/Start
+- Green `#c8e6c9` - Output/Success
+- Yellow `#fff9c4` - Processing
+- Red `#ffcdd2` - Error/Failure
+- Purple `#f3e5f5` - API Layer
+- Orange `#ffccbc` - External Tools
+
+**Arrows:**
+- Solid line `-->` - Process flow
+- Dashed line `-.->` - Data reference
+- Labeled arrow `-->|Label|` - Conditional flow
