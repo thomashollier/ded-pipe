@@ -63,6 +63,7 @@ FILE_STRUCTURE = {
         'CHANGELOG.md',
         'DOWNLOAD_GUIDE.md',
         'CLI_DOCUMENTATION.md',
+        'CLI_QUICK_REFERENCE.md',
         '.gitignore',
         'LICENSE',
         'requirements.txt',

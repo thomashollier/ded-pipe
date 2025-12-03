@@ -1,245 +1,376 @@
 # Project Structure
 
+Complete architecture overview including CLI, configuration files, and all components.
+
+## Directory Tree
+
 ```
 footage-ingest-pipeline/
 │
-├── README.md                          # Complete documentation
-├── requirements.txt                   # Python dependencies
-├── examples.py                        # Usage examples for all features
-├── process_tst100.py                  # Quick start script for test shot
+├── Documentation (9 files)
+│   ├── README.md                     # Main documentation
+│   ├── QUICKSTART.md                 # Quick reference
+│   ├── PROJECT_STRUCTURE.md          # This file
+│   ├── CONTRIBUTING.md               # Contribution guidelines  
+│   ├── CHANGELOG.md                  # Version history
+│   ├── DOWNLOAD_GUIDE.md             # Download instructions
+│   ├── SETUP_SCRIPT_GUIDE.md         # Setup automation guide
+│   ├── CLI_DOCUMENTATION.md          # CLI complete guide ⭐
+│   └── CLI_QUICK_REFERENCE.md        # CLI quick reference ⭐
 │
-└── ingest_pipeline/                   # Main package
-    │
-    ├── __init__.py                    # Package exports
-    ├── config.py                      # Configuration (PipelineConfig, KitsuConfig)
-    ├── models.py                      # Data models
-    │                                  #   - EditorialCutInfo
-    │                                  #   - ShotInfo
-    │                                  #   - ProcessingResult
-    │                                  #   - ImageSequence
-    │
-    ├── pipeline.py                    # Pipeline orchestration
-    │                                  #   - Pipeline (main orchestrator)
-    │                                  #   - PipelineBuilder (fluent interface)
-    │                                  #   - ConditionalPipeline (with conditions)
-    │
-    ├── footage_ingest.py              # High-level ingest interface
-    │                                  #   - FootageIngestPipeline (OOP interface)
-    │                                  #   - ingest_shot() (simple function)
-    │                                  #   - create_ingest_pipeline()
-    │
-    └── stages/                        # Processing stages
-        │
-        ├── __init__.py                # Stage exports
-        │
-        ├── base.py                    # Base classes
-        │                              #   - PipelineStage (abstract base)
-        │                              #   - ValidationStage (validation base)
-        │
-        ├── sony_conversion.py         # Sony Venice 2 conversion
-        │                              #   - SonyRawConversionStage
-        │
-        ├── oiio_transform.py          # OIIO color & transform
-        │                              #   - OIIOColorTransformStage
-        │
-        ├── proxy_generation.py        # Proxy movie generation
-        │                              #   - ProxyGenerationStage
-        │                              #   - BurnInProxyStage (with metadata)
-        │
-        ├── kitsu_integration.py       # Kitsu API integration
-        │                              #   - KitsuIntegrationStage
-        │                              #   - KitsuQueryStage
-        │
-        └── file_operations.py         # File operations
-                                       #   - FileCopyStage
-                                       #   - ShotTreeOrganizationStage
-                                       #   - CleanupStage
+├── Configuration (4 files)
+│   ├── .gitignore                    # Git ignore rules
+│   ├── LICENSE                       # MIT License
+│   ├── requirements.txt              # Python dependencies
+│   └── setup.py                      # Package installer
+│
+├── Example Files (2 files) ⭐
+│   ├── config.example.json           # Example config file
+│   └── batch.example.json            # Example batch file
+│
+├── Scripts (5 files)
+│   ├── setup_repo.py                 # Repository setup automation
+│   ├── setup_check.py                # Environment verification
+│   ├── ingest-cli.py                 # Command-line interface ⭐
+│   ├── examples.py                   # Python API examples
+│   └── process_tst100.py             # Test shot script
+│
+├── .github/                          # GitHub configuration
+│   ├── workflows/
+│   │   └── python-ci.yml             # CI/CD workflow
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md             # Bug template
+│   │   └── feature_request.md        # Feature template
+│   └── pull_request_template.md      # PR template
+│
+└── ingest_pipeline/                  # Main package (12 files)
+    ├── __init__.py                   # Package exports
+    ├── config.py                     # Configuration classes
+    ├── models.py                     # Data models
+    ├── pipeline.py                   # Pipeline orchestration
+    ├── footage_ingest.py             # High-level API
+    └── stages/                       # Processing stages (7 files)
+        ├── __init__.py               # Stage exports
+        ├── base.py                   # Base classes
+        ├── sony_conversion.py        # Sony MXF → DPX
+        ├── oiio_transform.py         # Color & transform
+        ├── proxy_generation.py       # Proxy creation
+        ├── kitsu_integration.py      # Asset management
+        └── file_operations.py        # File ops & cleanup
 ```
 
 ## File Descriptions
 
-### Root Level
+### Documentation Files (9 total)
 
-**README.md**
-- Complete documentation with examples
-- Installation instructions
-- Configuration guide
-- Usage patterns
+#### README.md
+Complete documentation with installation, usage, examples for both CLI and Python API.
 
-**requirements.txt**
-- Python package dependencies
-- Currently only requires `requests` for Kitsu integration
+#### QUICKSTART.md  
+Quick 3-step setup guide with CLI and Python examples.
 
-**examples.py**
-- Comprehensive examples showing different usage patterns
-- Single shot ingest
+#### PROJECT_STRUCTURE.md (this file)
+Architecture overview, file descriptions, data flow diagrams.
+
+#### CONTRIBUTING.md
+Development setup, code style, contribution workflow.
+
+#### CHANGELOG.md
+Version history, release notes, breaking changes.
+
+#### DOWNLOAD_GUIDE.md
+Complete file listing with download links, setup instructions.
+
+#### SETUP_SCRIPT_GUIDE.md
+How to use setup_repo.py for automated repository setup.
+
+#### CLI_DOCUMENTATION.md ⭐ NEW
+Complete command-line interface guide:
+- All CLI arguments and options
+- Configuration file format  
+- Batch file format
+- Usage examples
+- Shell script integration
+- Makefile examples
+
+#### CLI_QUICK_REFERENCE.md ⭐ NEW
+One-page quick reference for CLI with common commands and options table.
+
+### Configuration Files (4 total)
+
+#### .gitignore
+Git ignore rules for Python, IDE files, temp files, logs.
+
+#### LICENSE
+MIT License - open source license terms.
+
+#### requirements.txt
+Python dependencies (currently just `requests`).
+
+#### setup.py
+Package installer with metadata, dependencies, CLI entry point.
+
+### Example Files (2 total) ⭐ NEW
+
+#### config.example.json
+Example configuration file showing:
+- Project settings
+- Tool paths
+- Pipeline defaults
+- Output settings
+- Paths configuration
+
+#### batch.example.json
+Example batch processing file with array of shot data.
+
+### Scripts (5 total)
+
+#### setup_repo.py
+Automated repository setup:
+- Extracts files from zip
+- Creates directory structure
+- Organizes files
+- Initializes git
+- Interactive prompts
+
+#### setup_check.py
+Environment verification:
+- Python version check
+- Tool availability (ffmpeg, oiiotool, etc.)
+- Package import tests
+- Directory structure validation
+
+#### ingest-cli.py ⭐ NEW
+Command-line interface:
+- Single shot processing
+- Batch processing
+- Config file support
+- Dry run mode
+- Verbose logging
+- Report generation
+- Pipeline control options
+
+#### examples.py
+Python API usage examples:
+- Single shot
 - Batch processing
 - Custom pipelines
-- Individual stage usage
+- Individual stages
+- All interface types
 
-**process_tst100.py**
-- Quick start script specifically for the test shot
-- Demonstrates processing shot "tst100" from sequence "tst"
-- Includes helpful output formatting
+#### process_tst100.py
+Quick start test shot script with helpful output formatting.
 
-### Package: ingest_pipeline/
+### Python Package (12 files)
 
-**__init__.py**
-- Package initialization
-- Exports main classes and functions
-- Version info
+#### ingest_pipeline/__init__.py
+Package exports and version info.
 
-**config.py**
-- `PipelineConfig`: All pipeline settings
-  - Frame numbering (start at 1001, 8 frame handles)
-  - Color spaces (SLog3 to ACES)
-  - Output formats (EXR, MP4)
-  - Anamorphic settings (2.0 squeeze, UHD target)
-  - Tool paths
-  - Directory structure
+#### ingest_pipeline/config.py
+- `PipelineConfig`: Frame numbering, color spaces, formats, paths
 - `KitsuConfig`: Kitsu API settings
 
-**models.py**
-- `EditorialCutInfo`: Editorial cut data (in/out points, source file)
-- `ShotInfo`: Complete shot info (paths, status, frame ranges)
-- `ProcessingResult`: Results from pipeline stages
-- `ImageSequence`: Represents image sequences with frame ranges
+#### ingest_pipeline/models.py
+- `EditorialCutInfo`: Editorial cut data
+- `ShotInfo`: Complete shot information
+- `ProcessingResult`: Stage results
+- `ImageSequence`: Image sequence representation
 
-**pipeline.py**
-- `Pipeline`: Main orchestrator, executes stages in sequence
-- `PipelineBuilder`: Fluent interface for building pipelines
-- `ConditionalPipeline`: Pipeline with conditional stage execution
+#### ingest_pipeline/pipeline.py
+- `Pipeline`: Main orchestrator
+- `PipelineBuilder`: Fluent interface
+- `ConditionalPipeline`: Conditional execution
 
-**footage_ingest.py**
-- `FootageIngestPipeline`: High-level OOP interface
-- `ingest_shot()`: Simple function for single shots
-- `create_ingest_pipeline()`: Factory for standard pipeline
-- Batch processing utilities
+#### ingest_pipeline/footage_ingest.py
+- `FootageIngestPipeline`: OOP interface
+- `ingest_shot()`: Simple function
+- `create_ingest_pipeline()`: Factory
 
-### Package: ingest_pipeline/stages/
+#### ingest_pipeline/stages/base.py
+- `PipelineStage`: Abstract base class
+- `ValidationStage`: Validation base
 
-**base.py**
-- `PipelineStage`: Abstract base class for all stages
-  - Common functionality (logging, timing, error handling)
-  - Template method pattern
-- `ValidationStage`: Base class for validation stages
+#### ingest_pipeline/stages/sony_conversion.py
+- `SonyRawConversionStage`: MXF → DPX
 
-**sony_conversion.py**
-- `SonyRawConversionStage`: Convert Venice 2 MXF to DPX
-  - Calls Sony's command line tool
-  - Handles frame range extraction with handles
-  - Outputs intermediate DPX sequence
+#### ingest_pipeline/stages/oiio_transform.py
+- `OIIOColorTransformStage`: Color + geometric transforms
 
-**oiio_transform.py**
-- `OIIOColorTransformStage`: Color and geometric transforms
-  - ACES color conversion (SLog3 → ACEScg)
-  - Anamorphic desqueeze (2.0x)
-  - Letterbox to UHD (3840x2160)
-  - Output to EXR with DWAA compression
+#### ingest_pipeline/stages/proxy_generation.py
+- `ProxyGenerationStage`: MP4 proxy
+- `BurnInProxyStage`: Proxy with burn-ins
 
-**proxy_generation.py**
-- `ProxyGenerationStage`: Create MP4 proxy movies
-  - H.264 encoding
-  - sRGB color space
-  - Configurable resolution and quality
-- `BurnInProxyStage`: Proxy with burned-in metadata
-  - Frame numbers
-  - Shot name
-  - Timecode
+#### ingest_pipeline/stages/kitsu_integration.py
+- `KitsuIntegrationStage`: Asset registration
+- `KitsuQueryStage`: Data queries
 
-**kitsu_integration.py**
-- `KitsuIntegrationStage`: Register assets in Kitsu
-  - Create/update shot entries
-  - Register plate sequences
-  - Store metadata (frame ranges, paths, etc.)
-- `KitsuQueryStage`: Query data from Kitsu
+#### ingest_pipeline/stages/file_operations.py
+- `FileCopyStage`: File copying
+- `ShotTreeOrganizationStage`: Directory organization
+- `CleanupStage`: Temp file cleanup
 
-**file_operations.py**
-- `FileCopyStage`: Copy files with verification
-  - Single files or sequences
-  - Size verification
-- `ShotTreeOrganizationStage`: Organize into shot tree
-  - Create directory structure
-  - Copy plates and proxies to proper locations
-- `CleanupStage`: Remove temporary files
-  - Clean up after successful processing
-  - Optional preservation on errors
+## Data Flow
 
-## Pipeline Data Flow
-
+### Standard Pipeline Flow
 ```
-Editorial Cut List
-        ↓
-    ShotInfo
-        ↓
-[Sony Conversion]  ───→  DPX Sequence (temp)
-        ↓
-[OIIO Transform]   ───→  EXR Sequence (plates dir)
-        ↓
-[Proxy Generation] ───→  MP4 File (proxy dir)
-        ↓
-[Shot Tree Org]    ───→  Organized structure
-        ↓
-[Kitsu Integration]───→  Database entry
-        ↓
-[Cleanup]          ───→  Remove temp files
-        ↓
-    Complete!
+Editorial Data (manual or JSON)
+    ↓
+ShotInfo Model
+    ↓
+┌─────────────────────┐
+│ Pipeline            │
+│ Orchestrator        │
+└─────────────────────┘
+    ↓
+Sony Conversion  → DPX (temp)
+    ↓
+OIIO Transform   → EXR (plates)
+    ↓
+Proxy Generation → MP4 (proxy)
+    ↓
+Organization     → Shot tree
+    ↓
+Kitsu Integration→ Database
+    ↓
+Cleanup          → Remove temps
+    ↓
+Complete!
+```
+
+### CLI Flow ⭐ NEW
+```
+CLI Arguments + Config File
+    ↓
+ingest-cli.py
+    ↓
+Parse & Validate
+    ↓
+Load Config (JSON)
+    ↓
+Single Shot OR Batch Mode
+    ↓
+Call ingest_shot() or FootageIngestPipeline
+    ↓
+Standard Pipeline Flow
+    ↓
+Print Summary + Save Report
+```
+
+## Usage Patterns
+
+### Pattern 1: CLI (Production) ⭐ NEW
+```bash
+python ingest-cli.py --config show.json --batch dailies.json
+```
+**For:** Production use, shell scripts, TDs
+
+### Pattern 2: Python Function (Simple)
+```python
+ingest_shot(project, sequence, shot, source, in, out)
+```
+**For:** Quick automation, simple scripts
+
+### Pattern 3: OOP (Complex)
+```python
+pipeline = FootageIngestPipeline(project)
+pipeline.ingest_batch(shots)
+```
+**For:** Stateful processing, multiple shots
+
+### Pattern 4: Custom (Special)
+```python
+PipelineBuilder().add_stage(...).build()
+```
+**For:** R&D, experimental workflows
+
+## Configuration System ⭐
+
+### Three-Level Hierarchy
+1. **Package defaults** (PipelineConfig class)
+2. **Config file** (JSON via --config)
+3. **CLI arguments** (command-line)
+
+Later overrides earlier.
+
+### Config File Example
+```json
+{
+  "project": "my_film",
+  "project_id": "kitsu_123",
+  "tools": {
+    "sony_converter": "/usr/local/bin/converter",
+    "oiiotool": "oiiotool",
+    "ffmpeg": "ffmpeg"
+  },
+  "paths": {
+    "shot_tree_root": "/mnt/projects"
+  }
+}
 ```
 
 ## Output Structure
 
-For shot `tst100`:
-
 ```
-/mnt/projects/test_project/sequences/tst/tst100/
+/mnt/projects/{project}/sequences/{sequence}/{shot}/
 ├── plates/
-│   ├── tst100.0993.exr    # Frame 993 (first handle frame)
-│   ├── tst100.0994.exr
-│   ├── ...
-│   ├── tst100.1001.exr    # Frame 1001 (shot start)
-│   ├── ...
-│   └── tst100.1058.exr    # Last frame
+│   ├── {shot}.0993.exr    # Frame 993 (handle)
+│   ├── {shot}.1001.exr    # Frame 1001 (start)
+│   └── {shot}.####.exr    # Sequence
 └── proxy/
-    └── tst100.mp4          # Proxy movie
+    └── {shot}.mp4         # Proxy movie
 ```
 
 ## Key Design Principles
 
-1. **Modularity**: Each stage is independent and reusable
-2. **Flexibility**: Stages can be mixed and matched in pipelines
-3. **Extensibility**: Easy to add new stages or customize existing ones
-4. **Error Handling**: Comprehensive error capture and reporting
-5. **Logging**: Detailed logging at every step
-6. **Data Flow**: Clear data models passed between stages
-7. **Configuration**: Centralized configuration management
+1. **Modularity** - Reusable, independent stages
+2. **Flexibility** - Multiple interfaces (CLI, Python)
+3. **Configuration** - File-based + command-line
+4. **Error Handling** - Comprehensive with reports
+5. **Logging** - Detailed, configurable levels
+6. **Extensibility** - Easy to add stages/pipelines
 
 ## Stage Reusability
 
-Stages can be used in multiple pipelines:
-
 ```python
-# Standard ingest pipeline
-create_ingest_pipeline()  # Uses all stages
+# Full pipeline
+create_ingest_pipeline()
 
-# Quick QC pipeline (no Kitsu)
-Pipeline([
-    OIIOColorTransformStage(),
-    ProxyGenerationStage(),
-])
+# QC only (no Kitsu)
+Pipeline([OIIOColorTransformStage(), ProxyGenerationStage()])
 
-# Reprocessing pipeline (assumes conversion done)
-Pipeline([
-    OIIOColorTransformStage(),
-    ShotTreeOrganizationStage(),
-    KitsuIntegrationStage(),
-])
+# Reprocess colors
+Pipeline([OIIOColorTransformStage(), ShotTreeOrganizationStage()])
 
-# Custom pipeline with burn-in proxy
-Pipeline([
-    SonyRawConversionStage(),
-    OIIOColorTransformStage(),
-    BurnInProxyStage(),  # Different proxy stage
-    CleanupStage(),
-])
+# Custom with burn-ins
+Pipeline([..., BurnInProxyStage(), ...])
 ```
+
+## Repository Stats
+
+- **Total Files:** 33
+- **Documentation:** 9 files
+- **Configuration:** 4 files
+- **Examples:** 2 files  
+- **Scripts:** 5 files
+- **Python Modules:** 12 files
+- **GitHub Templates:** 4 files
+- **Lines of Code:** ~4,500+
+
+## What's New in This Version
+
+⭐ **Command-Line Interface** (ingest-cli.py)
+- Single shot and batch processing
+- Config file support
+- Dry run mode
+- Report generation
+
+⭐ **Example Files**
+- config.example.json - Configuration template
+- batch.example.json - Batch processing template
+
+⭐ **Enhanced Documentation**
+- CLI_DOCUMENTATION.md - Complete CLI guide
+- CLI_QUICK_REFERENCE.md - Quick reference card
+- Updated README and QUICKSTART with CLI examples
+
+This creates a complete, production-ready system for footage ingest!
