@@ -1,0 +1,38 @@
+[
+  {
+    "sequence": "seq010",
+    "shot": "010",
+    "source_file": "/mnt/raw_footage/2024-01-15/clip_001.mxf",
+    "in_point": 100,
+    "out_point": 250,
+    "source_fps": 24.0,
+    "notes": "Opening shot"
+  },
+  {
+    "sequence": "seq010",
+    "shot": "020",
+    "source_file": "/mnt/raw_footage/2024-01-15/clip_002.mxf",
+    "in_point": 300,
+    "out_point": 450,
+    "source_fps": 24.0,
+    "notes": "Medium shot"
+  },
+  {
+    "sequence": "seq010",
+    "shot": "030",
+    "source_file": "/mnt/raw_footage/2024-01-15/clip_003.mxf",
+    "in_point": 50,
+    "out_point": 175,
+    "source_fps": 24.0,
+    "notes": "Close-up"
+  },
+  {
+    "sequence": "seq020",
+    "shot": "010",
+    "source_file": "/mnt/raw_footage/2024-01-16/clip_001.mxf",
+    "in_point": 200,
+    "out_point": 400,
+    "source_fps": 24.0,
+    "notes": "Sequence 2 opening"
+  }
+]

@@ -56,6 +56,26 @@ This checks:
 
 ### 2. Configure
 
+**Option A: Use a config file (recommended)**
+
+Create `config.json`:
+```json
+{
+  "project": "my_project",
+  "project_id": "kitsu_project_123",
+  "paths": {
+    "shot_tree_root": "/mnt/projects"
+  },
+  "tools": {
+    "sony_converter": "/path/to/sony_converter",
+    "oiiotool": "oiiotool",
+    "ffmpeg": "ffmpeg"
+  }
+}
+```
+
+**Option B: Edit the package config**
+
 Edit `ingest_pipeline/config.py`:
 
 ```python
@@ -68,7 +88,25 @@ FFMPEG_TOOL = "ffmpeg"  # or full path
 SHOT_TREE_ROOT = Path("/mnt/projects")
 ```
 
-### 3. Process Test Shot
+### 3. Process Footage
+
+**Command Line (Easiest):**
+
+```bash
+# Single shot
+python ingest-cli.py \
+  --config config.json \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200
+
+# Batch processing
+python ingest-cli.py --config config.json --batch shots.json
+```
+
+**Python Script:**
 
 Edit `process_tst100.py` with your footage path, then run:
 
@@ -77,6 +115,51 @@ python process_tst100.py
 ```
 
 ## Usage Examples
+
+### Command-Line Interface
+
+**Basic single shot:**
+```bash
+python ingest-cli.py \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200
+```
+
+**With config file:**
+```bash
+python ingest-cli.py \
+  --config config.json \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200
+```
+
+**Batch processing:**
+```bash
+# Create shots.json with multiple shots
+python ingest-cli.py --config config.json --batch shots.json
+```
+
+**Dry run (preview):**
+```bash
+python ingest-cli.py \
+  --config config.json \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200 \
+  --dry-run
+```
+
+**See [CLI_DOCUMENTATION.md](CLI_DOCUMENTATION.md) for complete guide.**
+
+### Python API
 
 ### Simple Single Shot
 

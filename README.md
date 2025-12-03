@@ -1,6 +1,12 @@
 # Footage Ingest Pipeline
 
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 A flexible, modular Python pipeline for ingesting camera footage into a VFX production pipeline. Designed for Sony Venice 2 raw footage with support for ACES color workflow, anamorphic correction, and integration with Kitsu asset management.
+
+**✨ Production-ready • 🎬 VFX-focused • 🔧 Highly configurable • 📦 Modular design**
 
 ## Features
 
@@ -78,11 +84,32 @@ High-level interface for common ingest operations:
 - FFmpeg
 - Kitsu API credentials (optional)
 
-### Setup
+### Quick Install
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/footage-ingest-pipeline.git
+cd footage-ingest-pipeline
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install the package
+pip install -e .
+
+# Or install with development dependencies
+pip install -e ".[dev]"
+
+# Verify installation
+python setup_check.py
+```
+
+### Manual Setup
 
 ```bash
 # Install Python dependencies
-pip install requests
+pip install -r requirements.txt
 
 # Ensure tools are in PATH or configure in config.py:
 # - Sony raw converter
@@ -91,6 +118,36 @@ pip install requests
 ```
 
 ## Usage
+
+### Command-Line Interface (Recommended)
+
+The easiest way to use the pipeline is through the command-line interface:
+
+```bash
+# Single shot
+python ingest-cli.py \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200
+
+# With configuration file
+python ingest-cli.py \
+  --config config.json \
+  --source /path/to/clip.mxf \
+  --sequence tst \
+  --shot 100 \
+  --in 100 \
+  --out 200
+
+# Batch processing
+python ingest-cli.py --config config.json --batch shots.json
+```
+
+**See [CLI_DOCUMENTATION.md](CLI_DOCUMENTATION.md) for complete CLI guide.**
+
+### Python API
 
 ### Example 1: Simple Single Shot Ingest
 
