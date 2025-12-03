@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 from pathlib import Path
 
-from .models import ProcessingResult, ShotInfo
+from ..models import ProcessingResult, ShotInfo
 
 
 class PipelineStage(ABC):

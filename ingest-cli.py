@@ -17,6 +17,9 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+# Add parent directory to path for local import
+sys.path.insert(0, str(Path(__file__).parent))
+
 # Try to import the package
 try:
     from ingest_pipeline import (
@@ -25,10 +28,17 @@ try:
         PipelineConfig
     )
     from ingest_pipeline.models import EditorialCutInfo, ShotInfo
-except ImportError:
+except ImportError as e:
     print("Error: ingest_pipeline package not found.")
-    print("Please install the package first:")
+    print("Make sure you're running this script from the repository root directory.")
+    print("\nOption 1: Run from repository root (no installation needed)")
+    print("  cd /path/to/footage-ingest-pipeline")
+    print("  python ingest-cli.py ...")
+    print("\nOption 2: Install the package")
     print("  pip install -e .")
+    print("\nOption 3: Set PYTHONPATH")
+    print("  export PYTHONPATH=/path/to/footage-ingest-pipeline:$PYTHONPATH")
+    print(f"\nImport error details: {e}")
     sys.exit(1)
 
 
