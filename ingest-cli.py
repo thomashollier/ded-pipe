@@ -20,63 +20,24 @@ from typing import Dict, Any, List, Optional
 # Add parent directory to path for local import
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Determine package name by checking what exists
-PACKAGE_NAME = None
-script_dir = Path(__file__).parent
-
-# Check for common package names
-for possible_name in ['ded_io', 'ingest_pipeline', 'footage_ingest']:
-    if (script_dir / possible_name).exists():
-        PACKAGE_NAME = possible_name
-        break
-
-if PACKAGE_NAME is None:
-    print("Error: Could not find the package directory.")
-    print("Expected one of: ded_io, ingest_pipeline, footage_ingest")
-    print(f"In directory: {script_dir}")
-    print("\nPlease ensure the package directory exists and hasn't been renamed.")
-    sys.exit(1)
-
-# Try to import the package
+# Import the package
 try:
-    # Dynamic import based on package name
-    if PACKAGE_NAME == 'ded_io':
-        from ded_io import (
-            FootageIngestPipeline,
-            ingest_shot,
-            PipelineConfig
-        )
-        from ded_io.models import EditorialCutInfo, ShotInfo
-    elif PACKAGE_NAME == 'ingest_pipeline':
-        from ingest_pipeline import (
-            FootageIngestPipeline,
-            ingest_shot,
-            PipelineConfig
-        )
-        from ingest_pipeline.models import EditorialCutInfo, ShotInfo
-    else:
-        from footage_ingest import (
-            FootageIngestPipeline,
-            ingest_shot,
-            PipelineConfig
-        )
-        from footage_ingest.models import EditorialCutInfo, ShotInfo
-        
+    from ded_io import (
+        FootageIngestPipeline,
+        ingest_shot,
+        PipelineConfig
+    )
+    from ded_io.models import EditorialCutInfo, ShotInfo
 except ImportError as e:
-    print(f"Error: Could not import from {PACKAGE_NAME} package.")
+    print("Error: ded_io package not found.")
     print("Make sure you're running this script from the repository root directory.")
-    print(f"\nCurrent directory: {Path.cwd()}")
-    print(f"Script directory: {script_dir}")
-    print(f"Looking for package: {PACKAGE_NAME}")
     print("\nOption 1: Run from repository root (no installation needed)")
-    print("  cd /path/to/your-project")
+    print("  cd /path/to/ded-io")
     print("  python ingest-cli.py ...")
-    print("\nOption 2: Rename package directory to match expected name")
-    print(f"  mv old_name {PACKAGE_NAME}")
-    print("\nOption 3: Install the package")
+    print("\nOption 2: Install the package")
     print("  pip install -e .")
-    print("\nOption 4: Set PYTHONPATH")
-    print("  export PYTHONPATH=/path/to/your-project:$PYTHONPATH")
+    print("\nOption 3: Set PYTHONPATH")
+    print("  export PYTHONPATH=/path/to/ded-io:$PYTHONPATH")
     print(f"\nImport error details: {e}")
     sys.exit(1)
 
@@ -97,20 +58,23 @@ class IngestCLI:
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 Examples:
-  # Ingest a single shot
-  %(prog)s --source /path/to/clip.mxf --sequence tst --shot 100 --in 100 --out 200
+  # Ingest a single shot (uses default naming: task=pla, element=rawPlate, version=1)
+  %(prog)s --source /path/to/clip.mxf --sequence sht --shot 100 --in 100 --out 200
+  
+  # With naming convention options
+  %(prog)s --source clip.mxf --sequence sht --shot 100 --in 100 --out 200 --task pla --element rawPlate --ver 1
   
   # Use custom config file
-  %(prog)s --config my_config.json --source clip.mxf --sequence tst --shot 100 --in 100 --out 200
+  %(prog)s --config my_config.json --source clip.mxf --sequence sht --shot 100 --in 100 --out 200
   
   # Batch process from JSON file
   %(prog)s --batch shots.json
   
   # Dry run to preview settings
-  %(prog)s --source clip.mxf --sequence tst --shot 100 --in 100 --out 200 --dry-run
+  %(prog)s --source clip.mxf --sequence sht --shot 100 --in 100 --out 200 --dry-run
   
   # Verbose output
-  %(prog)s --source clip.mxf --sequence tst --shot 100 --in 100 --out 200 -v
+  %(prog)s --source clip.mxf --sequence sht --shot 100 --in 100 --out 200 -v
             """
         )
         
@@ -163,6 +127,29 @@ Examples:
             '--timecode',
             type=str,
             help='Source timecode start (optional)'
+        )
+        
+        # Naming convention options
+        naming_group = parser.add_argument_group('Naming Convention')
+        naming_group.add_argument(
+            '--task',
+            type=str,
+            default='pla',
+            help='Task type abbreviation: pla (plates), rnd (render), cmp (comp), etc. (default: pla)'
+        )
+        naming_group.add_argument(
+            '--element',
+            type=str,
+            default='rawPlate',
+            help='Element name: rawPlate, cleanPlate, bgPlate, etc. (default: rawPlate)'
+        )
+        naming_group.add_argument(
+            '--ver',
+            type=int,
+            default=1,
+            dest='version',
+            metavar='VERSION',
+            help='Version number (default: 1)'
         )
         
         # Batch processing
@@ -407,11 +394,18 @@ Examples:
         print("="*80)
         print(f"Sequence:      {shot_data.get('sequence')}")
         print(f"Shot:          {shot_data.get('shot')}")
+        print(f"Shot Name:     {shot_data.get('sequence')}{shot_data.get('shot')}")
         print(f"Source:        {shot_data.get('source_file')}")
         print(f"In Point:      {shot_data.get('in_point')}")
         print(f"Out Point:     {shot_data.get('out_point')}")
         print(f"Duration:      {shot_data.get('out_point') - shot_data.get('in_point') + 1} frames")
         print(f"FPS:           {shot_data.get('source_fps', 24.0)}")
+        
+        # Naming convention
+        print("\nNaming Convention:")
+        print(f"Task Type:     {shot_data.get('task_type', 'pla')}")
+        print(f"Element:       {shot_data.get('element_name', 'rawPlate')}")
+        print(f"Version:       v{shot_data.get('version', 1):03d}")
         
         # Calculate digital frame range
         duration = shot_data.get('out_point') - shot_data.get('in_point') + 1
@@ -446,6 +440,9 @@ Examples:
             'in_point': args.in_point,
             'out_point': args.out_point,
             'source_fps': args.fps,
+            'task_type': args.task,
+            'element_name': args.element,
+            'version': args.version,
         }
         
         if args.timecode:
@@ -462,6 +459,9 @@ Examples:
         if args.dry_run:
             print("DRY RUN - No processing will occur")
             print(f"\nWould process shot: {args.sequence}{args.shot}")
+            print(f"Task: {args.task}")
+            print(f"Element: {args.element}")
+            print(f"Version: {args.version}")
             print(f"Project: {project}")
             if project_id:
                 print(f"Kitsu Project ID: {project_id}")
@@ -479,6 +479,9 @@ Examples:
             in_point=args.in_point,
             out_point=args.out_point,
             source_fps=args.fps,
+            task_type=args.task,
+            element_name=args.element,
+            version=args.version,
             project_id=project_id,
             logger=self.logger
         )
