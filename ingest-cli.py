@@ -20,24 +20,63 @@ from typing import Dict, Any, List, Optional
 # Add parent directory to path for local import
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Determine package name by checking what exists
+PACKAGE_NAME = None
+script_dir = Path(__file__).parent
+
+# Check for common package names
+for possible_name in ['ded_io', 'ingest_pipeline', 'footage_ingest']:
+    if (script_dir / possible_name).exists():
+        PACKAGE_NAME = possible_name
+        break
+
+if PACKAGE_NAME is None:
+    print("Error: Could not find the package directory.")
+    print("Expected one of: ded_io, ingest_pipeline, footage_ingest")
+    print(f"In directory: {script_dir}")
+    print("\nPlease ensure the package directory exists and hasn't been renamed.")
+    sys.exit(1)
+
 # Try to import the package
 try:
-    from ingest_pipeline import (
-        FootageIngestPipeline,
-        ingest_shot,
-        PipelineConfig
-    )
-    from ingest_pipeline.models import EditorialCutInfo, ShotInfo
+    # Dynamic import based on package name
+    if PACKAGE_NAME == 'ded_io':
+        from ded_io import (
+            FootageIngestPipeline,
+            ingest_shot,
+            PipelineConfig
+        )
+        from ded_io.models import EditorialCutInfo, ShotInfo
+    elif PACKAGE_NAME == 'ingest_pipeline':
+        from ingest_pipeline import (
+            FootageIngestPipeline,
+            ingest_shot,
+            PipelineConfig
+        )
+        from ingest_pipeline.models import EditorialCutInfo, ShotInfo
+    else:
+        from footage_ingest import (
+            FootageIngestPipeline,
+            ingest_shot,
+            PipelineConfig
+        )
+        from footage_ingest.models import EditorialCutInfo, ShotInfo
+        
 except ImportError as e:
-    print("Error: ingest_pipeline package not found.")
+    print(f"Error: Could not import from {PACKAGE_NAME} package.")
     print("Make sure you're running this script from the repository root directory.")
+    print(f"\nCurrent directory: {Path.cwd()}")
+    print(f"Script directory: {script_dir}")
+    print(f"Looking for package: {PACKAGE_NAME}")
     print("\nOption 1: Run from repository root (no installation needed)")
-    print("  cd /path/to/footage-ingest-pipeline")
+    print("  cd /path/to/your-project")
     print("  python ingest-cli.py ...")
-    print("\nOption 2: Install the package")
+    print("\nOption 2: Rename package directory to match expected name")
+    print(f"  mv old_name {PACKAGE_NAME}")
+    print("\nOption 3: Install the package")
     print("  pip install -e .")
-    print("\nOption 3: Set PYTHONPATH")
-    print("  export PYTHONPATH=/path/to/footage-ingest-pipeline:$PYTHONPATH")
+    print("\nOption 4: Set PYTHONPATH")
+    print("  export PYTHONPATH=/path/to/your-project:$PYTHONPATH")
     print(f"\nImport error details: {e}")
     sys.exit(1)
 
