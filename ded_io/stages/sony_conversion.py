@@ -1,7 +1,8 @@
 """
 Stage for converting Sony Venice 2 raw footage to DPX.
-Uses Sony's command line conversion tool.
+Uses WSL interop to call Windows Sony tool from Linux/WSL.
 """
+import os
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -15,19 +16,57 @@ class SonyRawConversionStage(PipelineStage):
     """
     Convert Sony Venice 2 MXF raw footage to DPX sequence.
     
-    This stage extracts frames from the raw camera files and creates
-    an intermediate DPX sequence for further processing.
+    Uses WSL interop to call the Windows-only Sony conversion tool.
+    Automatically detects if running on Windows or WSL.
     """
+    
+    # Default Windows path to Sony tool
+    DEFAULT_TOOL_PATH = r"C:\Program Files\Sony\RAW Viewer\SonyRawConverter.exe"
     
     def __init__(self, sony_tool_path: Optional[str] = None, **kwargs):
         """
         Initialize the Sony conversion stage.
         
         Args:
-            sony_tool_path: Path to Sony conversion tool (uses config default if None)
+            sony_tool_path: Path to Sony conversion tool (Windows path)
         """
         super().__init__(**kwargs)
-        self.sony_tool_path = sony_tool_path or PipelineConfig.SONY_CONVERT_TOOL
+        self.sony_tool_path = sony_tool_path or self.DEFAULT_TOOL_PATH
+        self.is_wsl = self._detect_wsl()
+        
+        if self.is_wsl:
+            self.logger.info("Running in WSL - will use interop to call Windows tool")
+    
+    def _detect_wsl(self) -> bool:
+        """Check if running in Windows Subsystem for Linux."""
+        if os.name == 'nt':
+            return False
+        try:
+            with open('/proc/version', 'r') as f:
+                version = f.read().lower()
+                return 'microsoft' in version or 'wsl' in version
+        except:
+            return False
+    
+    def _to_windows_path(self, linux_path: Path) -> str:
+        """
+        Convert Linux/WSL path to Windows path.
+        
+        /mnt/c/Users/... -> C:\\Users\\...
+        /home/user/...   -> \\\\wsl$\\Ubuntu\\home\\user\\...
+        """
+        path_str = str(linux_path.resolve())
+        
+        if path_str.startswith('/mnt/'):
+            # /mnt/c/... -> C:\...
+            parts = path_str.split('/')
+            drive = parts[2].upper()
+            rest = '\\'.join(parts[3:])
+            return f"{drive}:\\{rest}"
+        else:
+            # WSL internal path -> \\wsl$\<distro>\...
+            distro = os.environ.get('WSL_DISTRO_NAME', 'Ubuntu')
+            return f"\\\\wsl$\\{distro}{path_str.replace('/', '\\')}"
     
     def process(self, shot_info: ShotInfo, result: ProcessingResult, **kwargs):
         """
@@ -68,7 +107,7 @@ class SonyRawConversionStage(PipelineStage):
         self.logger.info(f"Frame range: {in_frame}-{out_frame}")
         self.logger.info(f"Output pattern: {output_pattern}")
         
-        # Build conversion command
+        # Run conversion
         success = self._run_sony_conversion(
             source_file=source_file,
             output_pattern=output_pattern,
@@ -101,7 +140,7 @@ class SonyRawConversionStage(PipelineStage):
             result.data['dpx_sequence'] = dpx_sequence.to_dict()
             result.data['output_dir'] = str(output_dir)
             result.data['frames_created'] = len(existing_frames)
-        
+    
     def _run_sony_conversion(
         self,
         source_file: Path,
@@ -114,19 +153,27 @@ class SonyRawConversionStage(PipelineStage):
         """
         Run the Sony conversion tool.
         
-        Args:
-            source_file: Source MXF file
-            output_pattern: Output file pattern
-            in_frame: First frame to extract
-            out_frame: Last frame to extract
-            bit_depth: Bit depth for DPX
-            result: Result object
-            
-        Returns:
-            True if successful, False otherwise
+        Uses WSL interop if running in WSL, otherwise runs directly.
         """
-        # Build command - this is a placeholder as the actual Sony tool
-        # command structure would need to be verified
+        if self.is_wsl:
+            return self._run_via_wsl_interop(
+                source_file, output_pattern, in_frame, out_frame, bit_depth, result
+            )
+        else:
+            return self._run_native(
+                source_file, output_pattern, in_frame, out_frame, bit_depth, result
+            )
+    
+    def _run_native(
+        self,
+        source_file: Path,
+        output_pattern: Path,
+        in_frame: int,
+        out_frame: int,
+        bit_depth: int,
+        result: ProcessingResult
+    ) -> bool:
+        """Run Sony tool directly (Windows native)."""
         cmd = [
             self.sony_tool_path,
             '-i', str(source_file),
@@ -138,36 +185,81 @@ class SonyRawConversionStage(PipelineStage):
             '-colorspace', 'linear'
         ]
         
-        self.logger.debug(f"Running command: {' '.join(cmd)}")
+        self.logger.debug(f"Running: {' '.join(cmd)}")
         
         try:
-            # For this example, we'll create a placeholder
-            # In production, you would run the actual command:
-            # process = subprocess.run(
-            #     cmd,
-            #     capture_output=True,
-            #     text=True,
-            #     check=True
-            # )
-            
-            # Placeholder - simulate conversion
-            self.logger.warning(
-                "Sony conversion tool not available - using placeholder"
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=3600
             )
-            result.add_warning("Sony conversion tool not executed (placeholder mode)")
+            
+            if process.returncode != 0:
+                result.add_error(f"Sony conversion failed: {process.stderr}")
+                return False
             
             return True
             
-        except subprocess.CalledProcessError as e:
-            result.add_error(f"Sony conversion failed: {e.stderr}")
+        except subprocess.TimeoutExpired:
+            result.add_error("Sony conversion timed out")
             return False
         except FileNotFoundError:
-            result.add_error(
-                f"Sony conversion tool not found at: {self.sony_tool_path}"
-            )
+            result.add_error(f"Sony tool not found: {self.sony_tool_path}")
             return False
         except Exception as e:
-            result.add_error(f"Unexpected error during Sony conversion: {str(e)}")
+            result.add_error(f"Conversion error: {str(e)}")
+            return False
+    
+    def _run_via_wsl_interop(
+        self,
+        source_file: Path,
+        output_pattern: Path,
+        in_frame: int,
+        out_frame: int,
+        bit_depth: int,
+        result: ProcessingResult
+    ) -> bool:
+        """Run Sony tool via WSL interop (calling Windows exe from WSL)."""
+        
+        # Convert paths to Windows format
+        win_source = self._to_windows_path(source_file)
+        win_output = self._to_windows_path(output_pattern)
+        
+        # Build command using cmd.exe to run Windows executable
+        cmd = [
+            'cmd.exe', '/c',
+            self.sony_tool_path,
+            '-i', win_source,
+            '-o', win_output,
+            '-start', str(in_frame),
+            '-end', str(out_frame),
+            '-bit_depth', str(bit_depth),
+            '-format', 'dpx',
+            '-colorspace', 'linear'
+        ]
+        
+        self.logger.debug(f"WSL interop: {' '.join(cmd)}")
+        
+        try:
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=3600
+            )
+            
+            if process.returncode != 0:
+                result.add_error(f"Sony conversion failed: {process.stderr}")
+                return False
+            
+            return True
+            
+        except subprocess.TimeoutExpired:
+            result.add_error("Sony conversion timed out")
+            return False
+        except Exception as e:
+            result.add_error(f"WSL interop error: {str(e)}")
             return False
     
     def validate_inputs(self, shot_info: ShotInfo, result: ProcessingResult) -> bool:
