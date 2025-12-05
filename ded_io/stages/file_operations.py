@@ -289,7 +289,13 @@ class ShotTreeOrganizationStage(PipelineStage):
         plates_sequence = kwargs.get('plates_sequence')
         if plates_sequence:
             if isinstance(plates_sequence, dict):
-                plates_sequence = ImageSequence(**plates_sequence)
+                # Filter out computed properties that aren't constructor args
+                valid_keys = {'directory', 'base_name', 'extension', 'first_frame', 'last_frame', 'frame_padding'}
+                filtered_data = {k: v for k, v in plates_sequence.items() if k in valid_keys}
+                # Convert directory back to Path
+                if 'directory' in filtered_data:
+                    filtered_data['directory'] = Path(filtered_data['directory'])
+                plates_sequence = ImageSequence(**filtered_data)
             
             self.logger.info(f"Organizing plates sequence to: {colorspace_dir}")
             

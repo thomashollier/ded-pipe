@@ -104,6 +104,8 @@ class Pipeline:
                     pipeline_data['input_sequence'] = result.data['dpx_sequence']
                 if 'output_sequence' in result.data:
                     pipeline_data['input_sequence'] = result.data['output_sequence']
+                    # Also set plates_sequence for ShotTreeOrganizationStage
+                    pipeline_data['plates_sequence'] = result.data['output_sequence']
                 if 'proxy_file' in result.data:
                     pipeline_data['proxy_file'] = result.data['proxy_file']
                 # Also store all data under stage name for explicit access

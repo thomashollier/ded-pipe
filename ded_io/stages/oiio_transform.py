@@ -240,6 +240,9 @@ class OIIOColorTransformStage(PipelineStage):
             '-o', str(output_file)
         ]
         
+        # Log the command being executed
+        self.logger.debug(f"OIIO command: {' '.join(cmd)}")
+        
         try:
             # For this example, we'll create a placeholder
             # In production, you would run the actual command:
