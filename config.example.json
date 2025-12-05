@@ -8,8 +8,8 @@
   },
   
   "paths": {
-    "shot_tree_root": "/mnt/c/Users/thomas/Desktop/ded_io/shots"
-    "temp_dir": "/mnt/c/Users/thomas/Desktop/ded_io/tmp"
+    "shot_tree_root": "/mnt/c/Users/dedusr/Desktop/ded_io/shots",
+    "temp_dir": "/mnt/c/Users/dedusr/Desktop/ded_io/tmp"
   },
   
   "tools": {
