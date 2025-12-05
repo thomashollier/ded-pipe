@@ -82,6 +82,9 @@ def ingest_shot(
     in_point: int,
     out_point: int,
     source_fps: float = 24.0,
+    task_type: str = "pla",
+    element_name: str = "rawPlate",
+    version: int = 1,
     project_id: Optional[str] = None,
     logger: Optional[logging.Logger] = None
 ) -> dict:
@@ -92,12 +95,15 @@ def ingest_shot(
     
     Args:
         project: Project name
-        sequence: Sequence name
-        shot: Shot name
+        sequence: Sequence name (e.g., "sht")
+        shot: Shot number (e.g., "100")
         source_file: Path to source raw footage file
         in_point: Editorial in point (frame number)
         out_point: Editorial out point (frame number)
         source_fps: Source footage frame rate
+        task_type: Task type abbreviation (default: "pla" for plates)
+        element_name: Element identifier (default: "rawPlate")
+        version: Version number (default: 1)
         project_id: Kitsu project ID (optional)
         logger: Optional logger instance
         
@@ -114,13 +120,16 @@ def ingest_shot(
         source_fps=source_fps
     )
     
-    # Create shot info
+    # Create shot info with naming convention fields
     shot_info = ShotInfo(
         project=project,
         sequence=sequence,
         shot=shot,
         editorial_info=editorial_info,
-        source_raw_path=Path(source_file)
+        source_raw_path=Path(source_file),
+        task_type=task_type,
+        element_name=element_name,
+        version=version
     )
     
     # Create pipeline
@@ -183,18 +192,24 @@ class FootageIngestPipeline:
         source_file: Path,
         in_point: int,
         out_point: int,
-        source_fps: float = 24.0
+        source_fps: float = 24.0,
+        task_type: str = "pla",
+        element_name: str = "rawPlate",
+        version: int = 1
     ) -> dict:
         """
         Ingest a single shot.
         
         Args:
-            sequence: Sequence name
-            shot: Shot name
+            sequence: Sequence name (e.g., "sht")
+            shot: Shot number (e.g., "100")
             source_file: Path to source raw footage file
             in_point: Editorial in point
             out_point: Editorial out point
             source_fps: Frame rate
+            task_type: Task type abbreviation (default: "pla")
+            element_name: Element identifier (default: "rawPlate")
+            version: Version number (default: 1)
             
         Returns:
             Pipeline execution summary
@@ -207,6 +222,9 @@ class FootageIngestPipeline:
             in_point=in_point,
             out_point=out_point,
             source_fps=source_fps,
+            task_type=task_type,
+            element_name=element_name,
+            version=version,
             project_id=self.project_id,
             logger=self.logger
         )
@@ -235,6 +253,7 @@ class FootageIngestPipeline:
             shots_data: List of dictionaries with shot information
                        Each dict should contain: sequence, shot, source_file,
                        in_point, out_point, source_fps (optional)
+                       Optional: task_type, element_name, version
         """
         results = []
         
@@ -246,7 +265,10 @@ class FootageIngestPipeline:
                     source_file=Path(shot_data['source_file']),
                     in_point=shot_data['in_point'],
                     out_point=shot_data['out_point'],
-                    source_fps=shot_data.get('source_fps', 24.0)
+                    source_fps=shot_data.get('source_fps', 24.0),
+                    task_type=shot_data.get('task_type', 'pla'),
+                    element_name=shot_data.get('element_name', 'rawPlate'),
+                    version=shot_data.get('version', 1)
                 )
                 results.append(result)
                 
@@ -291,18 +313,24 @@ def quick_ingest(
     shot: str,
     in_point: int,
     out_point: int,
-    project: str = "default"
+    project: str = "default",
+    task_type: str = "pla",
+    element_name: str = "rawPlate",
+    version: int = 1
 ) -> dict:
     """
     Quick ingest function for simple use cases.
     
     Args:
         source_file: Path to source file
-        sequence: Sequence name
-        shot: Shot name
+        sequence: Sequence name (e.g., "sht")
+        shot: Shot number (e.g., "100")
         in_point: In point frame
         out_point: Out point frame
         project: Project name
+        task_type: Task type abbreviation (default: "pla")
+        element_name: Element identifier (default: "rawPlate")
+        version: Version number (default: 1)
         
     Returns:
         Pipeline summary
@@ -313,5 +341,8 @@ def quick_ingest(
         shot=shot,
         source_file=Path(source_file),
         in_point=in_point,
-        out_point=out_point
+        out_point=out_point,
+        task_type=task_type,
+        element_name=element_name,
+        version=version
     )

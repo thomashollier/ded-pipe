@@ -176,6 +176,11 @@ Examples:
         # Output options
         output_group = parser.add_argument_group('Output Options')
         output_group.add_argument(
+            '--output-root',
+            type=str,
+            help='Override shot tree root directory (default: /mnt/c/shottree_test)'
+        )
+        output_group.add_argument(
             '--output-dir',
             type=str,
             help='Override output directory'
@@ -599,6 +604,11 @@ Examples:
         
         # Load configuration
         self.config = self.load_config(args.config)
+        
+        # Override SHOT_TREE_ROOT if specified
+        if args.output_root:
+            PipelineConfig.SHOT_TREE_ROOT = Path(args.output_root)
+            self.logger.info(f"Shot tree root overridden to: {args.output_root}")
         
         # Determine mode
         if args.batch:

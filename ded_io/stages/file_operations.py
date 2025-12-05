@@ -113,7 +113,7 @@ class FileCopyStage(PipelineStage):
         
         try:
             self.logger.debug(f"Copying {source_file} to {dest_file}")
-            shutil.copy2(source_file, dest_file)
+            shutil.copy(source_file, dest_file)
             
             # Verify copy
             if self.verify_copy:
@@ -154,7 +154,7 @@ class FileCopyStage(PipelineStage):
             dest_file = destination_dir / source_file.name
             
             try:
-                shutil.copy2(source_file, dest_file)
+                shutil.copy(source_file, dest_file)
                 
                 if self.verify_copy:
                     if not self._verify_file_copy(source_file, dest_file, result):
@@ -210,13 +210,18 @@ class ShotTreeOrganizationStage(PipelineStage):
     """
     Organize files into a standardized shot tree structure.
     
-    Creates the complete directory structure and organizes
-    all shot-related files into appropriate locations.
+    Creates the complete directory structure following the naming convention:
+    {shot}/
+      {task}/
+        {shot}_{task}_{element}_v{version}/
+          {rep}_{colorspace}/
+            {shot}_{task}_{element}_v{version}_{rep}_{colorspace}.####.ext
+          {shot}_{task}_{element}_v{version}_{rep}_{colorspace}.mov
     """
     
     def process(self, shot_info: ShotInfo, result: ProcessingResult, **kwargs):
         """
-        Organize files into shot tree.
+        Organize files into shot tree with new naming convention.
         
         Args:
             shot_info: Shot information
@@ -224,90 +229,204 @@ class ShotTreeOrganizationStage(PipelineStage):
             **kwargs: Additional arguments
                 - plates_sequence: Plates ImageSequence to organize
                 - proxy_file: Proxy file path to organize
-                - additional_files: Dict of additional files {subdir: [files]}
+                - colorspace: Colorspace for plates (default: ACEScg)
         """
         if not self.validate_inputs(shot_info, result):
             return
         
-        # Create shot tree structure
-        shot_root = PipelineConfig.get_shot_path(
-            shot_info.project,
-            shot_info.sequence,
-            shot_info.shot
+        colorspace = kwargs.get('colorspace', PipelineConfig.COLORSPACE_ACESCG)
+        
+        # Create directory structure
+        # shot_root = /mnt/projects/sht100
+        shot_root = PipelineConfig.get_shot_path(shot_info.shot_name)
+        
+        # task_dir = /mnt/projects/sht100/pla
+        task_dir = PipelineConfig.get_task_path(
+            shot_info.shot_name,
+            shot_info.task_type
         )
         
-        if not self.create_directory(shot_root, result):
-            return
-        
-        # Create subdirectories
-        plates_dir = PipelineConfig.get_plates_path(
-            shot_info.project,
-            shot_info.sequence,
-            shot_info.shot
-        )
-        proxy_dir = PipelineConfig.get_proxy_path(
-            shot_info.project,
-            shot_info.sequence,
-            shot_info.shot
+        # version_dir = /mnt/projects/sht100/pla/sht100_pla_rawPlate_v001
+        version_dir = PipelineConfig.get_version_path(
+            shot_info.shot_name,
+            shot_info.task_type,
+            shot_info.element_name,
+            shot_info.version
         )
         
+        # colorspace_dir = /mnt/projects/sht100/pla/sht100_pla_rawPlate_v001/main_ACEScg
+        colorspace_dir = PipelineConfig.get_colorspace_path(
+            shot_info.shot_name,
+            shot_info.task_type,
+            shot_info.element_name,
+            shot_info.version,
+            shot_info.representation,
+            colorspace
+        )
+        
+        self.logger.info(f"Creating shot tree structure:")
+        self.logger.info(f"  Shot root: {shot_root}")
+        self.logger.info(f"  Task dir: {task_dir}")
+        self.logger.info(f"  Version container: {version_dir}")
+        self.logger.info(f"  Colorspace dir: {colorspace_dir}")
+        
+        # Create all directories
         directories_created = []
-        
-        for directory in [plates_dir, proxy_dir]:
+        for directory in [shot_root, task_dir, version_dir, colorspace_dir]:
             if self.create_directory(directory, result):
                 directories_created.append(str(directory))
+            else:
+                result.add_error(f"Failed to create directory: {directory}")
+                return
         
-        # Organize plates
+        result.data['directories_created'] = directories_created
+        
+        # Store paths in shot_info
+        shot_info.version_container_path = version_dir
+        shot_info.output_sequence_path = colorspace_dir
+        
+        # Organize plates sequence
         plates_sequence = kwargs.get('plates_sequence')
         if plates_sequence:
             if isinstance(plates_sequence, dict):
                 plates_sequence = ImageSequence(**plates_sequence)
             
-            # If plates aren't already in the correct location, copy them
-            if plates_sequence.directory != plates_dir:
-                copy_stage = FileCopyStage(logger=self.logger)
-                copy_result = copy_stage.execute(
-                    shot_info,
-                    source_sequence=plates_sequence,
-                    destination_dir=plates_dir,
-                    create_structure=False
-                )
-                
-                if not copy_result.success:
-                    result.add_error("Failed to copy plates to shot tree")
-                    result.errors.extend(copy_result.errors)
-                    return
+            self.logger.info(f"Organizing plates sequence to: {colorspace_dir}")
             
-            shot_info.output_plates_path = plates_dir
+            # Copy sequence to colorspace directory with new naming
+            organized_files = self._organize_sequence(
+                plates_sequence,
+                colorspace_dir,
+                shot_info,
+                colorspace,
+                result
+            )
+            
+            if organized_files:
+                result.data['plates_organized'] = len(organized_files)
+                result.data['plates_directory'] = str(colorspace_dir)
         
         # Organize proxy
         proxy_file = kwargs.get('proxy_file')
         if proxy_file:
             proxy_file = Path(proxy_file)
+            self.logger.info(f"Organizing proxy file to: {version_dir}")
             
-            if proxy_file.exists() and proxy_file.parent != proxy_dir:
-                dest_proxy = proxy_dir / proxy_file.name
-                
-                try:
-                    shutil.copy2(proxy_file, dest_proxy)
-                    shot_info.output_proxy_path = dest_proxy
-                except Exception as e:
-                    result.add_error(f"Failed to copy proxy: {str(e)}")
+            organized_proxy = self._organize_proxy(
+                proxy_file,
+                version_dir,
+                shot_info,
+                result
+            )
+            
+            if organized_proxy:
+                shot_info.output_proxy_path = organized_proxy
+                result.data['proxy_file'] = str(organized_proxy)
         
-        # Organize additional files
-        additional_files = kwargs.get('additional_files', {})
-        for subdir, files in additional_files.items():
-            subdir_path = shot_root / subdir
-            if self.create_directory(subdir_path, result):
-                for file_path in files:
-                    file_path = Path(file_path)
-                    if file_path.exists():
-                        try:
-                            shutil.copy2(file_path, subdir_path / file_path.name)
-                        except Exception as e:
-                            result.add_warning(
-                                f"Failed to copy {file_path}: {str(e)}"
-                            )
+        result.message = f"Organized shot files into: {version_dir}"
+    
+    def _organize_sequence(
+        self,
+        source_sequence: ImageSequence,
+        dest_dir: Path,
+        shot_info: ShotInfo,
+        colorspace: str,
+        result: ProcessingResult
+    ) -> List[Path]:
+        """
+        Copy sequence files to destination with new naming.
+        
+        Args:
+            source_sequence: Source image sequence
+            dest_dir: Destination directory (colorspace directory)
+            shot_info: Shot information
+            colorspace: Colorspace name
+            result: Result object
+            
+        Returns:
+            List of organized file paths
+        """
+        organized_files = []
+        errors = []
+        
+        for frame in range(source_sequence.first_frame, source_sequence.last_frame + 1):
+            try:
+                source_file = source_sequence.get_frame_path(frame)
+                
+                if not source_file.exists():
+                    errors.append(f"Source frame does not exist: {source_file}")
+                    continue
+                
+                # Generate new filename using naming convention
+                new_filename = shot_info.get_sequence_filename(
+                    frame,
+                    colorspace,
+                    source_sequence.extension
+                )
+                
+                dest_file = dest_dir / new_filename
+                
+                # Copy file
+                shutil.copy(source_file, dest_file)
+                organized_files.append(dest_file)
+                
+            except Exception as e:
+                errors.append(f"Failed to organize frame {frame}: {str(e)}")
+        
+        # Report results
+        self.logger.info(
+            f"Organized {len(organized_files)}/{source_sequence.total_frames} frames"
+        )
+        
+        if errors:
+            for error in errors:
+                result.add_warning(error)
+        
+        return organized_files
+    
+    def _organize_proxy(
+        self,
+        source_proxy: Path,
+        dest_dir: Path,
+        shot_info: ShotInfo,
+        result: ProcessingResult
+    ) -> Optional[Path]:
+        """
+        Copy proxy file to destination with new naming.
+        
+        Args:
+            source_proxy: Source proxy file
+            dest_dir: Destination directory (version container)
+            shot_info: Shot information
+            result: Result object
+            
+        Returns:
+            Path to organized proxy file
+        """
+        if not source_proxy.exists():
+            result.add_error(f"Source proxy does not exist: {source_proxy}")
+            return None
+        
+        # Generate new filename using naming convention
+        proxy_filename = shot_info.get_proxy_filename(
+            colorspace=PipelineConfig.COLORSPACE_SRGB,
+            extension=source_proxy.suffix.lstrip('.')
+        )
+        
+        dest_file = dest_dir / proxy_filename
+        
+        try:
+            # Use binary read/write to avoid any permission/metadata issues
+            # when copying between Linux and Windows filesystems (WSL)
+            with open(source_proxy, 'rb') as src:
+                with open(dest_file, 'wb') as dst:
+                    dst.write(src.read())
+            self.logger.info(f"Organized proxy: {dest_file}")
+            return dest_file
+            
+        except Exception as e:
+            result.add_error(f"Failed to organize proxy: {str(e)}")
+            return None
         
         result.data['shot_tree_root'] = str(shot_root)
         result.data['directories_created'] = directories_created

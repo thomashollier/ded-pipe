@@ -48,15 +48,22 @@ class ShotInfo:
     shot: str
     editorial_info: EditorialCutInfo
     
+    # Naming convention fields (new)
+    task_type: str = "pla"  # Task type abbreviation (pla, rnd, cmp, etc.)
+    element_name: str = "rawPlate"  # Element identifier
+    version: int = 1  # Version number
+    representation: str = "main"  # Representation (main, proxy, etc.)
+    
     # Processing information
     first_frame: int = 993  # Default from config
     last_frame: Optional[int] = None
     total_frames: Optional[int] = None
     
-    # Paths
+    # Paths (updated for new structure)
     source_raw_path: Optional[Path] = None
-    output_plates_path: Optional[Path] = None
-    output_proxy_path: Optional[Path] = None
+    output_sequence_path: Optional[Path] = None  # Path to colorspace directory
+    output_proxy_path: Optional[Path] = None  # Path to proxy file
+    version_container_path: Optional[Path] = None  # Path to version container
     
     # Status
     processing_status: str = "pending"
@@ -74,13 +81,84 @@ class ShotInfo:
     
     @property
     def shot_name(self) -> str:
-        """Get full shot name."""
-        return f"{self.sequence}{self.shot}"
+        """Get full shot name (e.g., 'sht100')."""
+        from .config import PipelineConfig
+        return PipelineConfig.format_shot_name(self.sequence, self.shot)
+    
+    @property
+    def version_string(self) -> str:
+        """Get formatted version string (e.g., 'v001')."""
+        from .config import PipelineConfig
+        return PipelineConfig.format_version(self.version)
+    
+    @property
+    def version_container_name(self) -> str:
+        """
+        Get version container directory name.
+        
+        Returns:
+            Version container name (e.g., 'sht100_pla_rawPlate_v001')
+        """
+        from .config import PipelineConfig
+        return PipelineConfig.get_version_container_name(
+            self.shot_name, self.task_type, self.element_name, self.version
+        )
     
     @property
     def frame_range(self) -> str:
         """Get frame range as string."""
         return f"{self.first_frame}-{self.last_frame}"
+    
+    def get_base_filename(self, colorspace: str) -> str:
+        """
+        Get base filename for this shot.
+        
+        Args:
+            colorspace: Colorspace name (e.g., 'ACEScg')
+            
+        Returns:
+            Base filename (e.g., 'sht100_pla_rawPlate_v001_main_ACEScg')
+        """
+        from .config import PipelineConfig
+        return PipelineConfig.get_base_filename(
+            self.shot_name, self.task_type, self.element_name,
+            self.version, self.representation, colorspace
+        )
+    
+    def get_sequence_filename(self, frame: int, colorspace: str, extension: str) -> str:
+        """
+        Get filename for a specific frame.
+        
+        Args:
+            frame: Frame number
+            colorspace: Colorspace name
+            extension: File extension (without dot)
+            
+        Returns:
+            Full filename (e.g., 'sht100_pla_rawPlate_v001_main_ACEScg.0993.exr')
+        """
+        from .config import PipelineConfig
+        return PipelineConfig.get_sequence_filename(
+            self.shot_name, self.task_type, self.element_name,
+            self.version, self.representation, colorspace, frame, extension
+        )
+    
+    def get_proxy_filename(self, colorspace: str = "sRGB", extension: str = "mov") -> str:
+        """
+        Get proxy filename.
+        
+        Args:
+            colorspace: Colorspace name (default: 'sRGB')
+            extension: File extension (default: 'mov')
+            
+        Returns:
+            Proxy filename (e.g., 'sht100_pla_rawPlate_v001_proxy_sRGB.mov')
+        """
+        from .config import PipelineConfig
+        return PipelineConfig.get_movie_filename(
+            self.shot_name, self.task_type, self.element_name,
+            self.version, "proxy", colorspace, extension
+        )
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
@@ -89,13 +167,20 @@ class ShotInfo:
             'sequence': self.sequence,
             'shot': self.shot,
             'shot_name': self.shot_name,
+            'task_type': self.task_type,
+            'element_name': self.element_name,
+            'version': self.version,
+            'version_string': self.version_string,
+            'version_container_name': self.version_container_name,
+            'representation': self.representation,
             'first_frame': self.first_frame,
             'last_frame': self.last_frame,
             'total_frames': self.total_frames,
             'frame_range': self.frame_range,
             'source_raw_path': str(self.source_raw_path) if self.source_raw_path else None,
-            'output_plates_path': str(self.output_plates_path) if self.output_plates_path else None,
+            'output_sequence_path': str(self.output_sequence_path) if self.output_sequence_path else None,
             'output_proxy_path': str(self.output_proxy_path) if self.output_proxy_path else None,
+            'version_container_path': str(self.version_container_path) if self.version_container_path else None,
             'processing_status': self.processing_status,
             'editorial_info': self.editorial_info.to_dict(),
             'created_at': self.created_at.isoformat()

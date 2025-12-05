@@ -90,7 +90,7 @@ class PipelineConfig:
     #         Files: {shot}_{task}_{element}_v{version}_{rep}_{colorspace}.####.ext
     #       Proxy: {shot}_{task}_{element}_v{version}_{rep}_{colorspace}.mov (at version level)
     
-    SHOT_TREE_ROOT = Path("/mnt/projects")
+    SHOT_TREE_ROOT = Path("/mnt/c/shottree_test")
     
     @classmethod
     def format_shot_name(cls, sequence: str, shot: str) -> str:

@@ -86,13 +86,28 @@ class Pipeline:
         start_time = datetime.now()
         shot_info.processing_status = "processing"
         
+        # Accumulated data from previous stages
+        pipeline_data = dict(kwargs)
+        
         # Execute each stage
         for i, stage in enumerate(self.stages):
             self.logger.info(f"Executing stage {i+1}/{len(self.stages)}: {stage.name}")
             
-            # Execute stage
-            result = stage.execute(shot_info, **kwargs)
+            # Execute stage with accumulated pipeline data
+            result = stage.execute(shot_info, **pipeline_data)
             self.results.append(result)
+            
+            # Accumulate data from this stage for next stages
+            if result.data:
+                # Map known outputs to expected inputs for next stages
+                if 'dpx_sequence' in result.data:
+                    pipeline_data['input_sequence'] = result.data['dpx_sequence']
+                if 'output_sequence' in result.data:
+                    pipeline_data['input_sequence'] = result.data['output_sequence']
+                if 'proxy_file' in result.data:
+                    pipeline_data['proxy_file'] = result.data['proxy_file']
+                # Also store all data under stage name for explicit access
+                pipeline_data[f'{stage.name}_output'] = result.data
             
             # Check for errors
             if not result.success:

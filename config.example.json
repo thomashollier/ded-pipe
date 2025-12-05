@@ -8,12 +8,12 @@
   },
   
   "paths": {
-    "shot_tree_root": "/mnt/projects",
-    "temp_dir": "/mnt/temp"
+    "shot_tree_root": "/mnt/c/Users/thomas/Desktop/ded_io/shots"
+    "temp_dir": "/mnt/c/Users/thomas/Desktop/ded_io/tmp"
   },
   
   "tools": {
-    "sony_converter": "/usr/local/bin/sony_raw_converter",
+    "sony_converter": "C:\Program Files\Sony\RAW Viewer\rawexporter.exe",
     "oiiotool": "/usr/bin/oiiotool",
     "ffmpeg": "/usr/bin/ffmpeg"
   },

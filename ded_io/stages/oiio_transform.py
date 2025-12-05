@@ -55,31 +55,36 @@ class OIIOColorTransformStage(PipelineStage):
         
         # Convert dict to ImageSequence if needed
         if isinstance(input_seq_data, dict):
-            input_sequence = ImageSequence(**input_seq_data)
+            # Filter out computed properties that aren't constructor args
+            valid_keys = {'directory', 'base_name', 'extension', 'first_frame', 'last_frame', 'frame_padding'}
+            filtered_data = {k: v for k, v in input_seq_data.items() if k in valid_keys}
+            # Convert directory back to Path
+            if 'directory' in filtered_data:
+                filtered_data['directory'] = Path(filtered_data['directory'])
+            input_sequence = ImageSequence(**filtered_data)
         else:
             input_sequence = input_seq_data
         
-        # Setup output directory
+        # Setup output directory - use colorspace directory from new structure
         output_dir = kwargs.get('output_dir')
         if output_dir is None:
-            output_dir = PipelineConfig.get_plates_path(
-                shot_info.project,
-                shot_info.sequence,
-                shot_info.shot
-            )
+            # Create temp directory for this stage (will be organized later)
+            from tempfile import mkdtemp
+            output_dir = Path(mkdtemp(prefix=f"{shot_info.shot_name}_oiio_"))
         
         output_dir = Path(output_dir)
         if not self.create_directory(output_dir, result):
             return
         
-        # Create output sequence
+        # Create output sequence using new naming convention
+        # Temporary filenames - will be renamed by ShotTreeOrganizationStage
         output_sequence = ImageSequence(
             directory=output_dir,
-            base_name=shot_info.shot_name,
+            base_name=shot_info.get_base_filename(PipelineConfig.COLORSPACE_ACESCG),
             extension=PipelineConfig.OUTPUT_FORMAT,
             first_frame=shot_info.first_frame,
             last_frame=shot_info.last_frame,
-            frame_padding=4
+            frame_padding=PipelineConfig.FRAME_PADDING
         )
         
         self.logger.info(f"Processing {input_sequence.total_frames} frames")

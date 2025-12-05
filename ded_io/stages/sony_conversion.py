@@ -21,17 +21,21 @@ class SonyRawConversionStage(PipelineStage):
     """
     
     # Default Windows path to Sony tool
-    DEFAULT_TOOL_PATH = r"C:\Program Files\Sony\RAW Viewer\SonyRawConverter.exe"
+    DEFAULT_TOOL_PATH = r"C:\Program Files\Sony\RAW Viewer\rawexporter.exe"
     
-    def __init__(self, sony_tool_path: Optional[str] = None, **kwargs):
+    def __init__(self, sony_tool_path: Optional[str] = None, bake_colorspace: str = "SGAMUT3_LINEAR", **kwargs):
         """
         Initialize the Sony conversion stage.
         
         Args:
             sony_tool_path: Path to Sony conversion tool (Windows path)
+            bake_colorspace: Output colorspace for bake mode. Options:
+                - ALL, INPUT, SGAMUT_LINEAR, SGAMUT_SLOG2
+                - ACES_LINEAR, SGAMUT3_LINEAR, SGAMUT3_SLOG3, SGAMUT3CINE_SLOG3
         """
         super().__init__(**kwargs)
         self.sony_tool_path = sony_tool_path or self.DEFAULT_TOOL_PATH
+        self.bake_colorspace = bake_colorspace
         self.is_wsl = self._detect_wsl()
         
         if self.is_wsl:
@@ -99,38 +103,45 @@ class SonyRawConversionStage(PipelineStage):
         # Calculate frame range with handles
         in_frame = shot_info.editorial_info.in_point - PipelineConfig.HEAD_HANDLE_FRAMES
         out_frame = shot_info.editorial_info.out_point + PipelineConfig.TAIL_HANDLE_FRAMES
+        frame_count = out_frame - in_frame + 1
+        
+        # Use pipeline frame numbering (starting at first_frame, typically 993)
+        output_first_frame = shot_info.first_frame
+        output_last_frame = output_first_frame + frame_count - 1
         
         # Build output pattern
         output_pattern = output_dir / f"{shot_info.shot_name}.%04d.dpx"
         
         self.logger.info(f"Converting {source_file} to DPX")
-        self.logger.info(f"Frame range: {in_frame}-{out_frame}")
+        self.logger.info(f"Source frame range: {in_frame}-{out_frame} ({frame_count} frames)")
+        self.logger.info(f"Output frame range: {output_first_frame}-{output_last_frame}")
         self.logger.info(f"Output pattern: {output_pattern}")
         
-        # Run conversion
+        # Run conversion with start_index to match pipeline frame numbering
         success = self._run_sony_conversion(
             source_file=source_file,
             output_pattern=output_pattern,
             in_frame=in_frame,
             out_frame=out_frame,
             bit_depth=kwargs.get('dpx_bit_depth', 16),
-            result=result
+            result=result,
+            start_index=output_first_frame
         )
         
         if success:
-            # Create ImageSequence object for the output
+            # Create ImageSequence object matching the output
             dpx_sequence = ImageSequence(
                 directory=output_dir,
                 base_name=shot_info.shot_name,
                 extension="dpx",
-                first_frame=shot_info.first_frame,
-                last_frame=shot_info.last_frame,
-                frame_padding=4
+                first_frame=output_first_frame,
+                last_frame=output_last_frame,
+                frame_padding=4  # We specified --digits 4
             )
             
             # Verify frames were created
             existing_frames = dpx_sequence.verify_exists()
-            expected_frames = dpx_sequence.total_frames
+            expected_frames = frame_count
             
             if len(existing_frames) != expected_frames:
                 result.add_warning(
@@ -140,6 +151,12 @@ class SonyRawConversionStage(PipelineStage):
             result.data['dpx_sequence'] = dpx_sequence.to_dict()
             result.data['output_dir'] = str(output_dir)
             result.data['frames_created'] = len(existing_frames)
+            result.data['frame_mapping'] = {
+                'source_in': in_frame,
+                'source_out': out_frame,
+                'output_first': output_first_frame,
+                'output_last': output_last_frame
+            }
     
     def _run_sony_conversion(
         self,
@@ -148,7 +165,8 @@ class SonyRawConversionStage(PipelineStage):
         in_frame: int,
         out_frame: int,
         bit_depth: int,
-        result: ProcessingResult
+        result: ProcessingResult,
+        start_index: int = 0
     ) -> bool:
         """
         Run the Sony conversion tool.
@@ -157,11 +175,11 @@ class SonyRawConversionStage(PipelineStage):
         """
         if self.is_wsl:
             return self._run_via_wsl_interop(
-                source_file, output_pattern, in_frame, out_frame, bit_depth, result
+                source_file, output_pattern, in_frame, out_frame, bit_depth, result, start_index
             )
         else:
             return self._run_native(
-                source_file, output_pattern, in_frame, out_frame, bit_depth, result
+                source_file, output_pattern, in_frame, out_frame, bit_depth, result, start_index
             )
     
     def _run_native(
@@ -171,18 +189,25 @@ class SonyRawConversionStage(PipelineStage):
         in_frame: int,
         out_frame: int,
         bit_depth: int,
-        result: ProcessingResult
+        result: ProcessingResult,
+        start_index: int = 0
     ) -> bool:
         """Run Sony tool directly (Windows native)."""
+        # --output expects base name only (e.g., "sht100"), tool adds frame numbers
+        output_base = output_pattern.stem.replace('.%04d', '').replace('.%d', '')
         cmd = [
             self.sony_tool_path,
-            '-i', str(source_file),
-            '-o', str(output_pattern),
-            '-start', str(in_frame),
-            '-end', str(out_frame),
-            '-bit_depth', str(bit_depth),
-            '-format', 'dpx',
-            '-colorspace', 'linear'
+            '--input', str(source_file),
+            '--dir', str(output_pattern.parent),
+            '--output', output_base,
+            '--in', str(in_frame),
+            '--out', str(out_frame),
+            '--start', str(start_index),
+            '--digits', '4',
+            '--video', 'DPX',
+            '--depth', str(bit_depth),
+            '--bake', self.bake_colorspace,
+            '--display', '1'
         ]
         
         self.logger.debug(f"Running: {' '.join(cmd)}")
@@ -218,7 +243,8 @@ class SonyRawConversionStage(PipelineStage):
         in_frame: int,
         out_frame: int,
         bit_depth: int,
-        result: ProcessingResult
+        result: ProcessingResult,
+        start_index: int = 0
     ) -> bool:
         """Run Sony tool via WSL interop (calling Windows exe from WSL)."""
         
@@ -226,20 +252,57 @@ class SonyRawConversionStage(PipelineStage):
         win_source = self._to_windows_path(source_file)
         win_output = self._to_windows_path(output_pattern)
         
-        # Build command using cmd.exe to run Windows executable
-        cmd = [
-            'cmd.exe', '/c',
-            self.sony_tool_path,
-            '-i', win_source,
-            '-o', win_output,
-            '-start', str(in_frame),
-            '-end', str(out_frame),
-            '-bit_depth', str(bit_depth),
-            '-format', 'dpx',
-            '-colorspace', 'linear'
+        # First check if the Sony tool exists
+        check_cmd = [
+            'powershell.exe',
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            f'Test-Path "{self.sony_tool_path}"'
         ]
         
-        self.logger.debug(f"WSL interop: {' '.join(cmd)}")
+        try:
+            check_result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+            if 'False' in check_result.stdout:
+                result.add_error(
+                    f"Sony RAW Converter not found at: {self.sony_tool_path}\n"
+                    f"Please install Sony RAW Viewer or set the correct path.\n"
+                    f"Download from: https://www.sony.com/electronics/support/software/raw-viewer"
+                )
+                return False
+        except Exception as e:
+            self.logger.warning(f"Could not verify tool path: {e}")
+        
+        # Build PowerShell command
+        # rawexporter.exe options from --help
+        # --output expects base name only (e.g., "sht100"), tool adds frame numbers
+        # --start controls the starting frame number in output filenames
+        output_base = output_pattern.stem.replace('.%04d', '').replace('.%d', '')
+        
+        ps_command = (
+            f'& "{self.sony_tool_path}" '
+            f'--input "{win_source}" '
+            f'--dir "{self._to_windows_path(output_pattern.parent)}" '
+            f'--output "{output_base}" '
+            f'--in {in_frame} '
+            f'--out {out_frame} '
+            f'--start {start_index} '
+            f'--digits 4 '
+            f'--video DPX '
+            f'--depth {bit_depth} '
+            f'--bake {self.bake_colorspace} '
+            f'--display 1'
+        )
+        
+        cmd = [
+            'powershell.exe',
+            '-NoProfile',
+            '-NonInteractive', 
+            '-Command',
+            ps_command
+        ]
+        
+        self.logger.debug(f"WSL interop (PowerShell): {ps_command}")
         
         try:
             process = subprocess.run(
@@ -250,7 +313,8 @@ class SonyRawConversionStage(PipelineStage):
             )
             
             if process.returncode != 0:
-                result.add_error(f"Sony conversion failed: {process.stderr}")
+                error_msg = process.stderr.strip() if process.stderr else process.stdout.strip()
+                result.add_error(f"Sony conversion failed: {error_msg}")
                 return False
             
             return True
