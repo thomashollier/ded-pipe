@@ -21,7 +21,7 @@ class PipelineConfig:
     
     # Camera and color settings
     CAMERA_TYPE = "Venice2"
-    SOURCE_COLORSPACE = "S-Log3 Venice S-Gamut3.Cine"
+    SOURCE_COLORSPACE = "Input - Sony - S-Log3 - Venice S-Gamut3.Cine"
     TARGET_COLORSPACE = "ACES - ACEScg"
     ACES_VERSION = "1.3"
     
