@@ -236,7 +236,7 @@ class OIIOColorTransformStage(PipelineStage):
             '--paste', f'+{offset_x}+{offset_y}',
             # Set output format and compression
             '--compression', PipelineConfig.OUTPUT_COMPRESSION,
-            '--bits', PipelineConfig.OUTPUT_BIT_DEPTH,
+            '-d', PipelineConfig.OUTPUT_BIT_DEPTH,
             '-o', str(output_file)
         ]
         
