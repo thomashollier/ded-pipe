@@ -18,6 +18,7 @@ A flexible, modular Python pipeline for ingesting camera footage into a VFX prod
 - **Shot Tree Management**: Organizes footage into standardized directory structures
 - **Kitsu Integration**: Automatically registers plates and metadata in Kitsu
 - **Flexible Execution**: Can run complete pipelines or individual stages
+- **Scripted WSL Install**: Scripted environment install on WSL/Debian
 
 ## Architecture
 
