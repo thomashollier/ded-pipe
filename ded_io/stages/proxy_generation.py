@@ -160,20 +160,14 @@ class ProxyGenerationStage(PipelineStage):
         self.logger.debug(f"Running command: {' '.join(cmd)}")
         
         try:
-            # For this example, we'll create a placeholder
-            # In production, you would run the actual command:
-            # process = subprocess.run(
-            #     cmd,
-            #     capture_output=True,
-            #     text=True,
-            #     check=True
-            # )
-            
-            # Create placeholder file
-            output_file.touch()
-            # Write some dummy data so it has a size
-            with open(output_file, 'wb') as f:
-                f.write(b'\x00' * 1024 * 1024)  # 1MB placeholder
+            # Run the actual FFmpeg command
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=3600
+            )
             
             self.logger.info(f"Proxy generated: {output_file}")
             return True
@@ -183,6 +177,9 @@ class ProxyGenerationStage(PipelineStage):
             return False
         except FileNotFoundError:
             result.add_error(f"FFmpeg not found at: {self.ffmpeg_path}")
+            return False
+        except subprocess.TimeoutExpired:
+            result.add_error("FFmpeg timed out")
             return False
         except Exception as e:
             result.add_error(f"Unexpected error during proxy generation: {str(e)}")
@@ -248,14 +245,27 @@ class BurnInProxyStage(ProxyGenerationStage):
         self.logger.debug(f"Running command: {' '.join(cmd)}")
         
         try:
-            # Placeholder
-            output_file.touch()
-            with open(output_file, 'wb') as f:
-                f.write(b'\x00' * 1024 * 1024)
+            # Run the actual FFmpeg command
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=3600
+            )
             
             self.logger.info(f"Burn-in proxy generated: {output_file}")
             return True
             
+        except subprocess.CalledProcessError as e:
+            result.add_error(f"FFmpeg failed: {e.stderr}")
+            return False
+        except FileNotFoundError:
+            result.add_error(f"FFmpeg not found at: {self.ffmpeg_path}")
+            return False
+        except subprocess.TimeoutExpired:
+            result.add_error("FFmpeg timed out")
+            return False
         except Exception as e:
             result.add_error(f"Error during burn-in proxy generation: {str(e)}")
             return False

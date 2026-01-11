@@ -22,7 +22,7 @@ class PipelineConfig:
     # Camera and color settings
     CAMERA_TYPE = "Venice2"
     SOURCE_COLORSPACE = "Input - Sony - S-Log3 - Venice S-Gamut3.Cine"
-    TARGET_COLORSPACE = "ACES - ACEScg"
+    TARGET_COLORSPACE = "ACEScg"
     ACES_VERSION = "1.3"
     
     # Image format settings
@@ -47,7 +47,7 @@ class PipelineConfig:
     ASSET_TYPE = "plate"
     
     # Tools paths (these should be customized per environment)
-    SONY_CONVERT_TOOL = "sony_raw_converter"  # Placeholder
+    SONY_CONVERT_TOOL = "/mnt/c/Program Files/Sony/Raw Viewer/rawexporter.exe"  # Placeholder
     OIIO_TOOL = "oiiotool"
     FFMPEG_TOOL = "ffmpeg"
     
@@ -288,10 +288,12 @@ class PipelineConfig:
 class KitsuConfig:
     """Configuration for Kitsu API integration."""
     
-    # These should be set via environment variables or a secure config file
-    KITSU_HOST = os.getenv("KITSU_HOST", "https://kitsu.example.com/api")
-    KITSU_EMAIL = os.getenv("KITSU_EMAIL")
-    KITSU_PASSWORD = os.getenv("KITSU_PASSWORD")
+    # Kitsu API connection settings
+    # IMPORTANT: Edit these with your actual Kitsu credentials
+    KITSU_HOST = os.getenv("KITSU_HOST", "KITSU URL")  # ← EDIT THIS
+    KITSU_EMAIL = os.getenv("KITSU_EMAIL", "KITSU USER")  # ← EDIT THIS
+    KITSU_PASSWORD = os.getenv("KITSU_PASSWORD", "KITSU PASSWORD")  # ← EDIT THIS
+    KITSU_PROJECT = os.getenv("KITSU_PROJECT", "ED")  # ← EDIT THIS
     
     # Timeouts
     CONNECTION_TIMEOUT = 30

@@ -244,17 +244,16 @@ class OIIOColorTransformStage(PipelineStage):
         self.logger.debug(f"OIIO command: {' '.join(cmd)}")
         
         try:
-            # For this example, we'll create a placeholder
-            # In production, you would run the actual command:
-            # process = subprocess.run(
-            #     cmd,
-            #     capture_output=True,
-            #     text=True,
-            #     check=True
-            # )
+            # Run the actual oiiotool command
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
             
-            # Create placeholder file
-            output_file.touch()
+            if process.stdout:
+                self.logger.debug(f"OIIO output: {process.stdout}")
             
             return True
             
