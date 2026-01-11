@@ -293,7 +293,7 @@ class KitsuConfig:
     KITSU_HOST = os.getenv("KITSU_HOST", "KITSU URL")  # ← EDIT THIS
     KITSU_EMAIL = os.getenv("KITSU_EMAIL", "KITSU USER")  # ← EDIT THIS
     KITSU_PASSWORD = os.getenv("KITSU_PASSWORD", "KITSU PASSWORD")  # ← EDIT THIS
-    KITSU_PROJECT = os.getenv("KITSU_PROJECT", "ED")  # ← EDIT THIS
+    KITSU_PROJECT = os.getenv("KITSU_PROJECT", "KITSU PROJECT")  # ← EDIT THIS
     
     # Timeouts
     CONNECTION_TIMEOUT = 30
