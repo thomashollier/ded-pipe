@@ -24,6 +24,12 @@ A production-ready Python pipeline for ingesting Sony Venice 2 raw camera footag
 
 ---
 
+## Note
+
+Use at your own risk. This code base was written using Claude. While was extensively tested for the specific immediate use and modular extensibility is part of the original specs, no claims are being made about further usability.
+
+---
+
 ## Overview
 
 DED-IO automates the complex process of ingesting camera-original footage into a VFX pipeline. Given a raw MXF clip from a Sony Venice 2 camera and editorial cut information, it:
